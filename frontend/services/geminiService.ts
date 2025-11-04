@@ -1,39 +1,48 @@
-
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
-import { Note, ChatMessage } from '../types';
+import { GoogleGenAI, GenerateContentResponse, Type } from '@google/genai';
+import { Note } from '../types';
 
 class GeminiService {
   private ai: GoogleGenAI;
 
   constructor() {
     if (!process.env.API_KEY) {
-      throw new Error("API_KEY environment variable not set");
+      throw new Error('API_KEY environment variable not set');
     }
     this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async getChatResponse(prompt: string, contextNotes: Note[]): Promise<string> {
-    const context = contextNotes.map(note => `Title: ${note.title}\nContent: ${note.content}`).join('\n\n---\n\n');
+    const context = contextNotes
+      .map(note => `Title: ${note.title}\nContent: ${note.content}`)
+      .join('\n\n---\n\n');
     const fullPrompt = `Based on the following notes, answer the user's question. \n\nNOTES:\n${context}\n\nQUESTION:\n${prompt}`;
 
     try {
-      const response: GenerateContentResponse = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: fullPrompt,
-      });
+      const response: GenerateContentResponse =
+        await this.ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: fullPrompt,
+        });
       return response.text;
     } catch (error) {
-      console.error("Error getting chat response:", error);
+      console.error('Error getting chat response:', error);
       return "Sorry, I couldn't process your request right now.";
     }
   }
-  
-  async findRelevantNotes(currentContent: string, allNotes: Note[]): Promise<Note[]> {
+
+  async findRelevantNotes(
+    currentContent: string,
+    allNotes: Note[]
+  ): Promise<Note[]> {
     if (!currentContent.trim() || allNotes.length === 0) {
-        return [];
+      return [];
     }
 
-    const noteSummaries = allNotes.map(n => ({ id: n.id, title: n.title, contentSnippet: n.content.substring(0, 200) }));
+    const noteSummaries = allNotes.map(n => ({
+      id: n.id,
+      title: n.title,
+      contentSnippet: n.content.substring(0, 200),
+    }));
 
     const prompt = `
       Current Note Content:
@@ -52,35 +61,42 @@ class GeminiService {
     `;
 
     try {
-      const response: GenerateContentResponse = await this.ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
+      const response: GenerateContentResponse =
+        await this.ai.models.generateContent({
+          model: 'gemini-2.5-pro',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
             responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    relevantNoteIds: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.STRING
-                        }
-                    }
-                }
-            }
-        }
-      });
+              type: Type.OBJECT,
+              properties: {
+                relevantNoteIds: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.STRING,
+                  },
+                },
+              },
+            },
+          },
+        });
 
       const jsonString = response.text.trim();
       const result = JSON.parse(jsonString);
-      
-      if (result && result.relevantNoteIds && Array.isArray(result.relevantNoteIds)) {
+
+      if (
+        result &&
+        result.relevantNoteIds &&
+        Array.isArray(result.relevantNoteIds)
+      ) {
         const relevantIds = result.relevantNoteIds as string[];
-        return relevantIds.map(id => allNotes.find(note => note.id === id)).filter((n): n is Note => n !== undefined);
+        return relevantIds
+          .map(id => allNotes.find(note => note.id === id))
+          .filter((n): n is Note => n !== undefined);
       }
       return [];
     } catch (error) {
-      console.error("Error finding relevant notes:", error);
+      console.error('Error finding relevant notes:', error);
       return [];
     }
   }
@@ -99,13 +115,14 @@ class GeminiService {
     `;
 
     try {
-      const response: GenerateContentResponse = await this.ai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt,
-      });
+      const response: GenerateContentResponse =
+        await this.ai.models.generateContent({
+          model: 'gemini-2.5-pro',
+          contents: prompt,
+        });
       return response.text;
     } catch (error) {
-      console.error("Error cleaning up note:", error);
+      console.error('Error cleaning up note:', error);
       return content; // Return original content on error
     }
   }

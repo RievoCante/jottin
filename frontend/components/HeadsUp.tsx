@@ -1,0 +1,238 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Note, ChatMessage } from '../types';
+import geminiService from '../services/geminiService';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faWandMagicSparkles,
+  faArrowUp,
+  faPlus,
+  faClock,
+} from '@fortawesome/free-solid-svg-icons';
+
+interface HeadsUpProps {
+  notesContext: Note[];
+  activeNote: Note | null;
+  relevantNotes: Note[];
+  isLoading: boolean;
+  width: number;
+  onResizeStart: (e: React.MouseEvent) => void;
+}
+
+const HeadsUp: React.FC<HeadsUpProps> = ({
+  notesContext,
+  activeNote,
+  relevantNotes,
+  isLoading,
+  width,
+  onResizeStart,
+}) => {
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [userInput, setUserInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const submitQuery = async (query: string) => {
+    if (!query.trim() || isChatLoading) return;
+
+    const newUserMessage: ChatMessage = {
+      id: `chat-${Date.now()}`,
+      sender: 'user',
+      text: query,
+    };
+    setChatHistory(prev => [...prev, newUserMessage]);
+    setUserInput('');
+    setIsChatLoading(true);
+
+    try {
+      const aiResponse = await geminiService.getChatResponse(
+        query,
+        activeNote ? [activeNote, ...notesContext] : notesContext
+      );
+      const newAiMessage: ChatMessage = {
+        id: `chat-${Date.now() + 1}`,
+        sender: 'ai',
+        text: aiResponse,
+      };
+      setChatHistory(prev => [...prev, newAiMessage]);
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      const errorMessage: ChatMessage = {
+        id: `chat-${Date.now() + 1}`,
+        sender: 'ai',
+        text: 'Sorry, I ran into an error.',
+      };
+      setChatHistory(prev => [...prev, errorMessage]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitQuery(userInput);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    submitQuery(suggestion);
+  };
+
+  const showHeadsUpContent = isLoading || relevantNotes.length > 0;
+
+  return (
+    <aside
+      className="bg-black border-l border-gray-800 flex flex-col relative"
+      style={{ width: `${width}px` }}
+    >
+      <div
+        onMouseDown={onResizeStart}
+        className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize z-10"
+      />
+
+      <div className="p-4 border-b border-gray-800">
+        <h2 className="font-semibold text-white">Heads Up</h2>
+      </div>
+
+      {showHeadsUpContent && (
+        <div className="p-4 space-y-4">
+          {isLoading && (
+            <div className="p-3 bg-gray-800/50 rounded-lg text-sm text-gray-400">
+              Searching for relevant notes...
+            </div>
+          )}
+          {!isLoading && relevantNotes.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-gray-400">
+                Related Notes
+              </h3>
+              {relevantNotes.map(note => (
+                <div key={note.id} className="p-3 bg-gray-800/50 rounded-lg">
+                  <p className="font-semibold text-white truncate">
+                    {note.title}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate mt-1">
+                    {note.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div
+        className={`flex-1 flex flex-col ${showHeadsUpContent ? 'border-t border-gray-800' : ''}`}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+          <h2 className="font-semibold text-white">Chat</h2>
+          <div className="flex items-center gap-2 text-gray-400">
+            <button className="p-1 rounded hover:bg-gray-700">
+              <FontAwesomeIcon icon={faPlus} className="w-5 h-5" />
+            </button>
+            <button className="p-1 rounded hover:bg-gray-700">
+              <FontAwesomeIcon icon={faClock} className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 p-4 flex flex-col overflow-y-auto">
+          {chatHistory.length === 0 && !isChatLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-start pt-8 text-center">
+              <button className="text-sm flex items-center gap-2 mb-8 text-gray-400 hover:text-white transition-colors">
+                <FontAwesomeIcon icon={faArrowUp} className="w-3 h-3" /> Resume
+                last Chat
+              </button>
+              <p className="text-gray-200 font-semibold mb-3">
+                Ask about your notes
+              </p>
+              <div className="space-y-2 w-full max-w-xs">
+                <button
+                  onClick={() =>
+                    handleSuggestionClick(
+                      'What should I follow up on from this week?'
+                    )
+                  }
+                  className="text-sm bg-[#1E1E1E] hover:bg-gray-700/80 text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-700"
+                >
+                  What should I follow up on from this week?
+                </button>
+                <button
+                  onClick={() =>
+                    handleSuggestionClick(
+                      'Give me an overview of my last 14 days'
+                    )
+                  }
+                  className="text-sm bg-[#1E1E1E] hover:bg-gray-700/80 text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-700"
+                >
+                  Give me an overview of my last 14 days
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {chatHistory.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start gap-2.5 ${msg.sender === 'user' ? 'justify-end' : ''}`}
+                >
+                  {msg.sender === 'ai' && (
+                    <div className="w-6 h-6 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                      <FontAwesomeIcon
+                        icon={faWandMagicSparkles}
+                        className="w-4 h-4 text-white"
+                      />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-xs p-3 rounded-lg text-sm ${msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-800'}`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {isChatLoading && (
+                <div className="flex items-start gap-2.5">
+                  <div className="w-6 h-6 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                    <FontAwesomeIcon
+                      icon={faWandMagicSparkles}
+                      className="w-4 h-4 text-white"
+                    />
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-800 text-sm text-gray-400 animate-pulse">
+                    Thinking...
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-gray-800">
+          <form onSubmit={handleSendMessage} className="relative">
+            <FontAwesomeIcon
+              icon={faPlus}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+            />
+            <input
+              type="text"
+              value={userInput}
+              onChange={e => setUserInput(e.target.value)}
+              placeholder="Tell or ask Mem something"
+              className="w-full bg-[#1E1E1E] border border-gray-700 rounded-full pl-11 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+            />
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-600 rounded-full hover:bg-indigo-600 disabled:bg-gray-600 transition-colors"
+              disabled={isChatLoading || !userInput.trim()}
+            >
+              <FontAwesomeIcon
+                icon={faArrowUp}
+                className="w-4 h-4 text-white"
+              />
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
+export default HeadsUp;

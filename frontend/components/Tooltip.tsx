@@ -28,9 +28,13 @@ const Tooltip: React.FC<TooltipProps> = ({ children, text, delay = 50 }) => {
   };
 
   return (
-    <div className="relative inline-flex" onMouseEnter={showTooltip} onMouseLeave={hideTooltip}>
+    <div
+      className="relative inline-flex"
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+    >
       {children}
-      <div 
+      <div
         className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-[#282828] border border-[#444] text-white text-xs rounded-md shadow-lg whitespace-nowrap z-20 transition-all duration-150 ease-out pointer-events-none transform ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         style={{ transformOrigin: 'top center' }}
       >

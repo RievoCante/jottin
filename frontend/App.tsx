@@ -9,9 +9,12 @@ import geminiService from './services/geminiService';
 
 const App: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>(MOCK_NOTES);
-  const [collections, setCollections] = useState<Collection[]>(MOCK_COLLECTIONS);
+  const [collections, setCollections] =
+    useState<Collection[]>(MOCK_COLLECTIONS);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
-  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(
+    null
+  );
   const [relevantNotes, setRelevantNotes] = useState<Note[]>([]);
   const [isLoadingHeadsUp, setIsLoadingHeadsUp] = useState(false);
   const [headsUpWidth, setHeadsUpWidth] = useState(384); // w-96 in pixels
@@ -19,33 +22,38 @@ const App: React.FC = () => {
   const activeNote = notes.find(n => n.id === activeNoteId) || null;
   const activeCollection = collections.find(c => c.id === activeCollectionId);
 
+  const handleNoteChange = useCallback(
+    async (noteId: string, updates: Partial<Omit<Note, 'id'>>) => {
+      let updatedNote: Note | undefined;
+      setNotes(prevNotes =>
+        prevNotes.map(n => {
+          if (n.id === noteId) {
+            updatedNote = { ...n, ...updates };
+            return updatedNote;
+          }
+          return n;
+        })
+      );
 
-  const handleNoteChange = useCallback(async (noteId: string, updates: Partial<Omit<Note, 'id'>>) => {
-    let updatedNote: Note | undefined;
-    setNotes(prevNotes => 
-      prevNotes.map(n => {
-        if (n.id === noteId) {
-          updatedNote = { ...n, ...updates };
-          return updatedNote;
+      if (updatedNote && updates.content !== undefined) {
+        setIsLoadingHeadsUp(true);
+        try {
+          const relevant = await geminiService.findRelevantNotes(
+            updates.content,
+            notes.filter(n => n.id !== noteId)
+          );
+          setRelevantNotes(relevant);
+        } catch (error) {
+          console.error('Error finding relevant notes:', error);
+          setRelevantNotes([]);
+        } finally {
+          setIsLoadingHeadsUp(false);
         }
-        return n;
-      })
-    );
-
-    if (updatedNote && updates.content !== undefined) {
-      setIsLoadingHeadsUp(true);
-      try {
-        const relevant = await geminiService.findRelevantNotes(updates.content, notes.filter(n => n.id !== noteId));
-        setRelevantNotes(relevant);
-      } catch (error) {
-        console.error("Error finding relevant notes:", error);
-        setRelevantNotes([]);
-      } finally {
-        setIsLoadingHeadsUp(false);
       }
-    }
-  }, [notes]);
-  
+    },
+    [notes]
+  );
+
   const createNewNote = (content: string, title?: string) => {
     const newNote: Note = {
       id: `note-${Date.now()}`,
@@ -70,7 +78,9 @@ const App: React.FC = () => {
     setNotes(prevNotes => {
       const newNotes = prevNotes.filter(n => n.id !== noteId);
       if (activeNote?.id === noteId) {
-        const notesToConsider = activeCollectionId ? newNotes.filter(n => n.collectionId === activeCollectionId) : newNotes;
+        const notesToConsider = activeCollectionId
+          ? newNotes.filter(n => n.collectionId === activeCollectionId)
+          : newNotes;
         setActiveNoteId(notesToConsider[0]?.id || newNotes[0]?.id || null);
       }
       return newNotes;
@@ -82,15 +92,15 @@ const App: React.FC = () => {
       const cleanedContent = await geminiService.cleanUpNote(note.content);
       handleNoteChange(note.id, { content: cleanedContent });
     } catch (error) {
-      console.error("Failed to clean up note:", error);
+      console.error('Failed to clean up note:', error);
     }
   };
-  
+
   const handleSelectCollection = (collectionId: string | null) => {
     setActiveCollectionId(collectionId);
     setActiveNoteId(null); // Go to collection view, not a specific note
   };
-  
+
   const handleSelectNote = (noteId: string) => {
     setActiveNoteId(noteId);
   };
@@ -99,7 +109,7 @@ const App: React.FC = () => {
     setActiveNoteId(null);
     setActiveCollectionId(null);
   };
-  
+
   // Resizing logic
   const handleMouseDownResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -109,7 +119,8 @@ const App: React.FC = () => {
 
   const handleMouseMoveResize = (e: MouseEvent) => {
     const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 300 && newWidth < 800) { // Min and max width constraints
+    if (newWidth > 300 && newWidth < 800) {
+      // Min and max width constraints
       setHeadsUpWidth(newWidth);
     }
   };
@@ -119,28 +130,27 @@ const App: React.FC = () => {
     document.removeEventListener('mouseup', handleMouseUpResize);
   };
 
-
-  const displayedNotes = activeCollectionId 
-    ? notes.filter(note => note.collectionId === activeCollectionId) 
+  const displayedNotes = activeCollectionId
+    ? notes.filter(note => note.collectionId === activeCollectionId)
     : notes;
 
   return (
     <div className="bg-[#171717] min-h-screen text-gray-300 font-sans flex antialiased">
-      <Sidebar 
-        collections={collections} 
+      <Sidebar
+        collections={collections}
         notes={notes}
-        activeNoteId={activeNote?.id} 
+        activeNoteId={activeNote?.id}
         activeCollectionId={activeCollectionId}
-        onNoteSelect={(note) => handleSelectNote(note.id)} 
+        onNoteSelect={note => handleSelectNote(note.id)}
         onCollectionSelect={handleSelectCollection}
-        onCreateNote={() => createNewNote('')} 
+        onCreateNote={() => createNewNote('')}
       />
       <main className="flex-1 flex flex-col">
         {activeNote ? (
-          <MainContent 
+          <MainContent
             key={activeNote.id}
-            note={activeNote} 
-            onNoteChange={handleNoteChange} 
+            note={activeNote}
+            onNoteChange={handleNoteChange}
             createNewNote={createNewNote}
             onCleanUp={handleCleanUpNote}
             onTogglePin={() => handleTogglePinNote(activeNote.id)}
@@ -148,22 +158,22 @@ const App: React.FC = () => {
             onGoHome={handleGoHome}
           />
         ) : (
-           <NoteList 
-             notes={displayedNotes} 
-             onNoteSelect={handleSelectNote} 
-             onCreateNote={() => createNewNote('')}
-             collection={activeCollection}
-             collections={collections}
-           />
+          <NoteList
+            notes={displayedNotes}
+            onNoteSelect={handleSelectNote}
+            onCreateNote={() => createNewNote('')}
+            collection={activeCollection}
+            collections={collections}
+          />
         )}
       </main>
-      <HeadsUp 
-          notesContext={notes} 
-          activeNote={activeNote} 
-          relevantNotes={relevantNotes} 
-          isLoading={isLoadingHeadsUp} 
-          width={headsUpWidth}
-          onResizeStart={handleMouseDownResize}
+      <HeadsUp
+        notesContext={notes}
+        activeNote={activeNote}
+        relevantNotes={relevantNotes}
+        isLoading={isLoadingHeadsUp}
+        width={headsUpWidth}
+        onResizeStart={handleMouseDownResize}
       />
     </div>
   );
