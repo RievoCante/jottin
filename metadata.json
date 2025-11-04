@@ -1,0 +1,7 @@
+{
+  "name": "AI Note-Taking App",
+  "description": "An AI-powered note-taking app that acts as a personal thought partner. It stores notes, transcribes voice memos, saves web links, and features an AI chat to ask questions about your notes and a 'Heads Up' feature to automatically surface relevant past notes.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
