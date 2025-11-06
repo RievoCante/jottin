@@ -179,7 +179,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                   className={`flex items-start gap-2.5 ${msg.sender === 'user' ? 'justify-end' : ''}`}
                 >
                   {msg.sender === 'ai' && (
-                    <div className="w-6 h-6 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                    <div className="w-6 h-6 bg-indigo-500 rounded-full shrink-0 flex items-center justify-center">
                       <FontAwesomeIcon
                         icon={faWandMagicSparkles}
                         className="w-4 h-4 text-white"
@@ -195,7 +195,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
               ))}
               {isChatLoading && (
                 <div className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 bg-indigo-500 rounded-full flex-shrink-0 flex items-center justify-center">
+                  <div className="w-6 h-6 bg-indigo-500 rounded-full shrink-0 flex items-center justify-center">
                     <FontAwesomeIcon
                       icon={faWandMagicSparkles}
                       className="w-4 h-4 text-white"

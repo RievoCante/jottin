@@ -1,0 +1,17 @@
+{
+  "name": "jottin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docker compose -f docker-compose.dev.yml up",
+    "dev:build": "docker compose -f docker-compose.dev.yml up --build",
+    "dev:down": "docker compose -f docker-compose.dev.yml down",
+    "prod": "docker compose -f docker-compose.prod.yml up -d",
+    "prod:build": "docker compose -f docker-compose.prod.yml up -d --build",
+    "prod:down": "docker compose -f docker-compose.prod.yml down",
+    "logs:dev": "docker compose -f docker-compose.dev.yml logs -f",
+    "logs:prod": "docker compose -f docker-compose.prod.yml logs -f",
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && go run main.go"
+  }
+}

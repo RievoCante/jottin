@@ -5,7 +5,7 @@ class GeminiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = 'http://localhost:8080';
+    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
   }
 
   async getChatResponse(prompt: string, contextNotes: Note[]): Promise<string> {
