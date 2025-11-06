@@ -50,10 +50,10 @@ func main() {
 
 	// Setup CORS
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
-		AllowCredentials: true,
+		AllowCredentials: false, // Must be false when using "*" for origins
 	})
 
 	handler := c.Handler(mux)
