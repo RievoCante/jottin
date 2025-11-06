@@ -11,6 +11,7 @@ import {
   faTrash,
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SidebarProps {
   collections: Collection[];
@@ -37,8 +38,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
   const [isCollectionsExpanded, setIsCollectionsExpanded] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme } = useTheme();
 
   const pinnedNotes = notes.filter(n => n.isPinned);
   const allNotesExceptPinned = notes.filter(n => !n.isPinned);
@@ -80,16 +81,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-72 bg-[#111111] border-r border-gray-800 flex flex-col p-3 text-sm">
+    <aside className="w-72 bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col p-3 text-sm">
       <div className="relative mb-4" ref={menuRef}>
         <button
           onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-          className="flex items-center gap-2 p-2 w-full rounded-md hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-2 p-2 w-full rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
         >
           <div className="w-8 h-8 bg-pink-300 rounded-lg flex items-center justify-center font-bold text-black">
             R
           </div>
-          <span className="font-semibold text-white">Ravit Chutivisuth</span>
+          <span className="font-semibold text-gray-900 dark:text-white">Ravit Chutivisuth</span>
         </button>
 
         {isProfileMenuOpen && (
@@ -122,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               <button
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleTheme}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors"
               >
                 <div className="flex items-center gap-3">
@@ -132,16 +133,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                      isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+                      theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'
                     }`}
                     onClick={e => {
                       e.stopPropagation();
-                      setIsDarkMode(!isDarkMode);
+                      toggleTheme();
                     }}
                   >
                     <div
                       className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                        isDarkMode ? 'translate-x-5' : 'translate-x-0.5'
+                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
                       } mt-0.5`}
                     />
                   </div>
@@ -177,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <button
         onClick={onCreateNote}
-        className="flex items-center justify-center gap-2 w-full text-left p-2 rounded-md bg-gray-700/50 hover:bg-gray-700 transition-colors mb-4 font-semibold"
+        className="flex items-center justify-center gap-2 w-full text-left p-2 rounded-md bg-gray-200 dark:bg-gray-700/50 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors mb-4 font-semibold text-gray-900 dark:text-gray-300"
       >
         <FontAwesomeIcon icon={faPlus} className="w-4 h-4" />
         <span>Create Note</span>
@@ -186,7 +187,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto pr-1">
         {pinnedNotes.length > 0 && (
           <div className="mb-4">
-            <h3 className="flex items-center gap-2 p-2 text-gray-400 font-semibold">
+            <h3 className="flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold">
               <FontAwesomeIcon icon={faBookmark} className="w-4 h-4" />
               <span>Pinned</span>
             </h3>
@@ -197,8 +198,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => onNoteSelect(note)}
                     className={`w-full text-left p-2 rounded-md truncate ${
                       activeNoteId === note.id
-                        ? 'bg-indigo-600/30 text-white'
-                        : 'hover:bg-gray-800'
+                        ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
                     }`}
                   >
                     {note.title}
@@ -212,10 +213,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="mb-4">
           <button
             onClick={() => onCollectionSelect(null)}
-            className={`w-full text-left flex items-center gap-2 p-2 text-gray-400 font-semibold rounded-md ${
+            className={`w-full text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md ${
               activeCollectionId === null
-                ? 'bg-gray-700/50 text-white'
-                : 'hover:bg-gray-800'
+                ? 'bg-gray-200 dark:bg-gray-700/50 text-gray-900 dark:text-white'
+                : 'hover:bg-gray-200 dark:hover:bg-gray-800'
             }`}
           >
             <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4" />
@@ -228,8 +229,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onNoteSelect(note)}
                   className={`w-full text-left p-2 rounded-md truncate ${
                     activeNoteId === note.id
-                      ? 'bg-indigo-600/30 text-white'
-                      : 'hover:bg-gray-800'
+                      ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
+                      : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
                   }`}
                 >
                   {note.title}
@@ -241,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <li>
                   <button
                     onClick={() => setIsNotesExpanded(true)}
-                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     See All
                   </button>
@@ -251,7 +252,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div>
-          <h3 className="flex items-center gap-2 p-2 text-gray-400 font-semibold">
+          <h3 className="flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold">
             <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4" />
             <span>Collections</span>
           </h3>
@@ -262,8 +263,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => handleCollectionClick(collection.id)}
                   className={`w-full text-left p-2 rounded-md flex items-center gap-2 ${
                     activeCollectionId === collection.id
-                      ? 'bg-indigo-600/30 text-white'
-                      : 'hover:bg-gray-800'
+                      ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
+                      : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
                   }`}
                 >
                   <span>{collection.icon}</span>
@@ -276,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <li>
                   <button
                     onClick={() => setIsCollectionsExpanded(true)}
-                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
                   >
                     See All
                   </button>

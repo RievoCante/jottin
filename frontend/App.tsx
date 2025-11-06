@@ -135,7 +135,7 @@ const App: React.FC = () => {
     : notes;
 
   return (
-    <div className="bg-[#171717] min-h-screen text-gray-300 font-sans flex antialiased">
+    <div className="bg-gray-100 dark:bg-[#171717] min-h-screen text-gray-900 dark:text-gray-300 font-sans flex antialiased">
       <Sidebar
         collections={collections}
         notes={notes}

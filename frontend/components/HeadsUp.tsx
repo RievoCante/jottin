@@ -79,7 +79,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
 
   return (
     <aside
-      className="bg-black border-l border-gray-800 flex flex-col relative"
+      className="bg-gray-50 dark:bg-black border-l border-gray-200 dark:border-gray-800 flex flex-col relative"
       style={{ width: `${width}px` }}
     >
       <div
@@ -87,28 +87,28 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
         className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize z-10"
       />
 
-      <div className="p-4 border-b border-gray-800">
-        <h2 className="font-semibold text-white">Heads Up</h2>
+      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+        <h2 className="font-semibold text-gray-900 dark:text-white">Heads Up</h2>
       </div>
 
       {showHeadsUpContent && (
         <div className="p-4 space-y-4">
           {isLoading && (
-            <div className="p-3 bg-gray-800/50 rounded-lg text-sm text-gray-400">
+            <div className="p-3 bg-gray-200 dark:bg-gray-800/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
               Searching for relevant notes...
             </div>
           )}
           {!isLoading && relevantNotes.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-400">
+              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">
                 Related Notes
               </h3>
               {relevantNotes.map(note => (
-                <div key={note.id} className="p-3 bg-gray-800/50 rounded-lg">
-                  <p className="font-semibold text-white truncate">
+                <div key={note.id} className="p-3 bg-gray-200 dark:bg-gray-800/50 rounded-lg">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">
                     {note.title}
                   </p>
-                  <p className="text-xs text-gray-400 truncate mt-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-1">
                     {note.content}
                   </p>
                 </div>
@@ -119,15 +119,15 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
       )}
 
       <div
-        className={`flex-1 flex flex-col ${showHeadsUpContent ? 'border-t border-gray-800' : ''}`}
+        className={`flex-1 flex flex-col ${showHeadsUpContent ? 'border-t border-gray-200 dark:border-gray-800' : ''}`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <h2 className="font-semibold text-white">Chat</h2>
-          <div className="flex items-center gap-2 text-gray-400">
-            <button className="p-1 rounded hover:bg-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="font-semibold text-gray-900 dark:text-white">Chat</h2>
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <button className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
               <FontAwesomeIcon icon={faPlus} className="w-5 h-5" />
             </button>
-            <button className="p-1 rounded hover:bg-gray-700">
+            <button className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
               <FontAwesomeIcon icon={faClock} className="w-5 h-5" />
             </button>
           </div>
@@ -136,11 +136,11 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
         <div className="flex-1 p-4 flex flex-col overflow-y-auto">
           {chatHistory.length === 0 && !isChatLoading ? (
             <div className="flex-1 flex flex-col items-center justify-start pt-8 text-center">
-              <button className="text-sm flex items-center gap-2 mb-8 text-gray-400 hover:text-white transition-colors">
+              <button className="text-sm flex items-center gap-2 mb-8 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 <FontAwesomeIcon icon={faArrowUp} className="w-3 h-3" /> Resume
                 last Chat
               </button>
-              <p className="text-gray-200 font-semibold mb-3">
+              <p className="text-gray-900 dark:text-gray-200 font-semibold mb-3">
                 Ask about your notes
               </p>
               <div className="space-y-2 w-full max-w-xs">
@@ -150,7 +150,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                       'What should I follow up on from this week?'
                     )
                   }
-                  className="text-sm bg-[#1E1E1E] hover:bg-gray-700/80 text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-700"
+                  className="text-sm bg-gray-200 dark:bg-[#1E1E1E] hover:bg-gray-300 dark:hover:bg-gray-700/80 text-gray-900 dark:text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-300 dark:border-gray-700"
                 >
                   What should I follow up on from this week?
                 </button>
@@ -160,7 +160,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                       'Give me an overview of my last 14 days'
                     )
                   }
-                  className="text-sm bg-[#1E1E1E] hover:bg-gray-700/80 text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-700"
+                  className="text-sm bg-gray-200 dark:bg-[#1E1E1E] hover:bg-gray-300 dark:hover:bg-gray-700/80 text-gray-900 dark:text-gray-300 px-4 py-2 rounded-lg w-full transition-colors border border-gray-300 dark:border-gray-700"
                 >
                   Give me an overview of my last 14 days
                 </button>
@@ -182,7 +182,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                     </div>
                   )}
                   <div
-                    className={`max-w-xs p-3 rounded-lg text-sm ${msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-800'}`}
+                    className={`max-w-xs p-3 rounded-lg text-sm ${msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-300'}`}
                   >
                     {msg.text}
                   </div>
@@ -196,7 +196,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                       className="w-4 h-4 text-white"
                     />
                   </div>
-                  <div className="p-3 rounded-lg bg-gray-800 text-sm text-gray-400 animate-pulse">
+                  <div className="p-3 rounded-lg bg-gray-200 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-400 animate-pulse">
                     Thinking...
                   </div>
                 </div>
@@ -205,22 +205,22 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800">
           <form onSubmit={handleSendMessage} className="relative">
             <FontAwesomeIcon
               icon={faPlus}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-400 pointer-events-none"
             />
             <input
               type="text"
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
               placeholder="Tell or ask Mem something"
-              className="w-full bg-[#1E1E1E] border border-gray-700 rounded-full pl-11 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              className="w-full bg-gray-100 dark:bg-[#1E1E1E] border border-gray-300 dark:border-gray-700 rounded-full pl-11 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 dark:text-gray-300"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-600 rounded-full hover:bg-indigo-600 disabled:bg-gray-600 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-400 dark:bg-gray-600 rounded-full hover:bg-indigo-600 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors"
               disabled={isChatLoading || !userInput.trim()}
             >
               <FontAwesomeIcon

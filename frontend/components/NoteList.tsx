@@ -73,9 +73,9 @@ const NoteList: React.FC<NoteListProps> = ({
 
   if (notes.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#1E1E1E]">
+      <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#1E1E1E]">
         <div className="text-center">
-          <p className="text-gray-500 text-lg">
+          <p className="text-gray-500 dark:text-gray-500 text-lg">
             {collection
               ? `No notes in "${collection.name}"`
               : 'You have no notes'}
@@ -95,29 +95,29 @@ const NoteList: React.FC<NoteListProps> = ({
   const headerContent = collection ? (
     <>
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           <span className="mr-3">{collection.icon}</span>
           {collection.name}
         </h1>
         <input
           type="text"
           placeholder="Add a description"
-          className="bg-transparent text-sm text-gray-400 placeholder-gray-500 focus:outline-none"
+          className="bg-transparent text-sm text-gray-600 dark:text-gray-400 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
         />
       </div>
       <div className="flex items-center gap-2">
         <Tooltip text="New note in collection">
-          <button className="p-2 rounded-md hover:bg-gray-700/50">
+          <button className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300">
             <FontAwesomeIcon icon={faPlus} className="w-5 h-5" />
           </button>
         </Tooltip>
         <Tooltip text="Clean up notes">
-          <button className="p-2 rounded-md hover:bg-gray-700/50">
+          <button className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300">
             <FontAwesomeIcon icon={faWandMagicSparkles} className="w-5 h-5" />
           </button>
         </Tooltip>
         <Tooltip text="More actions">
-          <button className="p-2 rounded-md hover:bg-gray-700/50">
+          <button className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300">
             <FontAwesomeIcon icon={faEllipsis} className="w-5 h-5" />
           </button>
         </Tooltip>
@@ -126,21 +126,21 @@ const NoteList: React.FC<NoteListProps> = ({
   ) : (
     <>
       <div>
-        <h1 className="text-2xl font-bold text-white">Notes</h1>
-        <div className="flex items-center gap-4 mt-2 text-sm font-semibold text-gray-400">
-          <button className="text-white border-b-2 border-white pb-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes</h1>
+        <div className="flex items-center gap-4 mt-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+          <button className="text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white pb-1">
             All
           </button>
-          <button className="hover:text-white">Created by me</button>
-          <button className="hover:text-white">Shared with me</button>
+          <button className="hover:text-gray-900 dark:hover:text-white">Created by me</button>
+          <button className="hover:text-gray-900 dark:hover:text-white">Shared with me</button>
         </div>
       </div>
     </>
   );
 
   return (
-    <div className="flex-1 flex flex-col bg-[#1E1E1E] overflow-y-auto">
-      <div className="sticky top-0 bg-[#1E1E1E]/80 backdrop-blur-sm z-10 border-b border-gray-700 px-8 py-3 flex justify-between items-center">
+    <div className="flex-1 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-y-auto">
+      <div className="sticky top-0 bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-sm z-10 border-b border-gray-200 dark:border-gray-700 px-8 py-3 flex justify-between items-center">
         {headerContent}
       </div>
       <div className="px-8 py-4">
@@ -148,7 +148,7 @@ const NoteList: React.FC<NoteListProps> = ({
           ([group, notesInGroup]) =>
             notesInGroup.length > 0 && (
               <div key={group} className="mb-6">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                <h2 className="text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">
                   {group}
                 </h2>
                 <div className="space-y-1">
@@ -160,30 +160,30 @@ const NoteList: React.FC<NoteListProps> = ({
                       <button
                         key={note.id}
                         onClick={() => onNoteSelect(note.id)}
-                        className="w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-700/50"
+                        className="w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50"
                       >
                         <div className="flex items-center gap-3 text-left min-w-0">
                           <FontAwesomeIcon
                             icon={faFileLines}
-                            className="w-5 h-5 text-gray-500 shrink-0"
+                            className="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0"
                           />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold text-white truncate">
+                              <p className="font-semibold text-gray-900 dark:text-white truncate">
                                 {note.title}
                               </p>
                               {noteCollection && (
-                                <span className="text-xs bg-green-900/70 text-green-300 px-2 py-0.5 rounded-full shrink-0">
+                                <span className="text-xs bg-green-100 dark:bg-green-900/70 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full shrink-0">
                                   {noteCollection.name}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-400 truncate">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                               {note.content.substring(0, 60)}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500 shrink-0 ml-4">
+                        <span className="text-xs text-gray-500 dark:text-gray-500 shrink-0 ml-4">
                           {formatDate(note.date)}
                         </span>
                       </button>

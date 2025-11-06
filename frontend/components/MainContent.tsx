@@ -104,28 +104,28 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#1E1E1E]">
-      <div className="flex items-center justify-between border-b border-gray-700 px-2 h-12 shrink-0 text-sm">
+    <div className="flex-1 flex flex-col bg-white dark:bg-[#1E1E1E]">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-2 h-12 shrink-0 text-sm">
         <div className="flex items-center">
           <button
             onClick={onGoHome}
             title="Home"
-            className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-700/80 transition-colors"
+            className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700/80 transition-colors text-gray-900 dark:text-gray-300"
           >
             <FontAwesomeIcon icon={faHouse} className="w-4 h-4" />
             <span>Home</span>
           </button>
-          <div className="w-px h-5 bg-gray-700 mx-1"></div>
+          <div className="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1"></div>
         </div>
         <div className="flex-1 flex items-center min-w-0">
-          <div className="flex items-center font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-md border border-b-0 border-gray-600 rounded-b-none relative -bottom-px">
+          <div className="flex items-center font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 px-3 py-1.5 rounded-md border border-b-0 border-gray-300 dark:border-gray-600 rounded-b-none relative -bottom-px">
             <span className="truncate">{note.title}</span>
           </div>
         </div>
 
         <div className="flex items-center">
           <Tooltip text="Close">
-            <button className="p-2 rounded hover:bg-gray-700">
+            <button className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-300">
               <FontAwesomeIcon icon={faXmark} className="w-5 h-5" />
             </button>
           </Tooltip>
@@ -133,13 +133,13 @@ const MainContent: React.FC<MainContentProps> = ({
       </div>
 
       <div className="flex-1 pt-6 flex flex-col relative max-w-4xl mx-auto w-full px-8">
-        <div className="flex justify-between items-center mb-4 text-gray-400">
+        <div className="flex justify-between items-center mb-4 text-gray-500 dark:text-gray-400">
           <span className="text-sm"># Organize</span>
           <div className="flex items-center gap-1 relative">
             <Tooltip text={isRecording ? 'Stop Recording' : 'Start Recording'}>
               <button
                 onClick={handleToggleRecording}
-                className="p-2 rounded-full hover:bg-gray-700"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 {isRecording ? (
                   <FontAwesomeIcon
@@ -154,7 +154,7 @@ const MainContent: React.FC<MainContentProps> = ({
             <Tooltip text="Clean Up Note">
               <button
                 onClick={() => onCleanUp(note)}
-                className="p-2 rounded-full hover:bg-gray-700"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 <FontAwesomeIcon
                   icon={faWandMagicSparkles}
@@ -165,18 +165,18 @@ const MainContent: React.FC<MainContentProps> = ({
             <Tooltip text={note.isPinned ? 'Unpin Note' : 'Pin Note'}>
               <button
                 onClick={onTogglePin}
-                className="p-2 rounded-full hover:bg-gray-700"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 <FontAwesomeIcon
                   icon={faBookmark}
-                  className={`w-5 h-5 transition-colors ${note.isPinned ? 'text-indigo-400' : ''}`}
+                  className={`w-5 h-5 transition-colors ${note.isPinned ? 'text-indigo-500 dark:text-indigo-400' : ''}`}
                 />
               </button>
             </Tooltip>
             <Tooltip text="More Actions">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-full hover:bg-gray-700"
+                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 <FontAwesomeIcon icon={faEllipsis} className="w-5 h-5" />
               </button>
@@ -184,15 +184,15 @@ const MainContent: React.FC<MainContentProps> = ({
             {isMenuOpen && (
               <div
                 ref={menuRef}
-                className="absolute right-0 top-full mt-2 w-56 bg-[#2F2F2F] rounded-lg shadow-xl z-10 border border-gray-700 text-sm"
+                className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#2F2F2F] rounded-lg shadow-xl z-10 border border-gray-200 dark:border-gray-700 text-sm"
               >
                 <div className="p-2">
-                  <p className="px-2 py-1 text-xs text-gray-400">
+                  <p className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
                     Magic Actions
                   </p>
                   <button
                     onClick={handleCleanUpClick}
-                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-600 text-gray-200"
+                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
                   >
                     <FontAwesomeIcon
                       icon={faWandMagicSparkles}
@@ -201,20 +201,20 @@ const MainContent: React.FC<MainContentProps> = ({
                     Clean Up
                   </button>
                 </div>
-                <div className="p-2 border-t border-gray-600/50">
-                  <p className="px-2 py-1 text-xs text-gray-400">
+                <div className="p-2 border-t border-gray-200 dark:border-gray-600/50">
+                  <p className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400">
                     Note Actions
                   </p>
                   <button
                     onClick={handlePinClick}
-                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-600 text-gray-200"
+                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
                   >
                     <FontAwesomeIcon icon={faBookmark} className="w-4 h-4" />{' '}
                     {note.isPinned ? 'Unpin' : 'Pin'}
                   </button>
                   <button
                     onClick={handleDeleteClick}
-                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-red-500/20 text-red-400"
+                    className="w-full text-left flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400"
                   >
                     <FontAwesomeIcon icon={faTrash} className="w-4 h-4" /> Trash
                   </button>
@@ -229,17 +229,19 @@ const MainContent: React.FC<MainContentProps> = ({
             type="text"
             value={title}
             onChange={handleTitleChange}
-            className="text-3xl font-bold text-white bg-transparent focus:outline-none w-full mb-4"
+            className="text-3xl font-bold text-gray-900 dark:text-white bg-transparent focus:outline-none w-full mb-4"
             placeholder="Untitled Note"
           />
           <textarea
             value={content}
             onChange={handleContentChange}
-            className="w-full h-full flex-1 bg-transparent text-gray-300 placeholder-gray-500 resize-none focus:outline-none text-base leading-relaxed"
+            className="w-full h-full flex-1 bg-transparent text-gray-800 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:outline-none text-base leading-relaxed"
             placeholder="Start writing your note here..."
           />
           {isRecording && (
-            <div className="mt-4 text-red-400 animate-pulse">Recording...</div>
+            <div className="mt-4 text-red-500 dark:text-red-400 animate-pulse">
+              Recording...
+            </div>
           )}
         </div>
       </div>

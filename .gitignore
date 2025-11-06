@@ -40,3 +40,8 @@ backend/dist
 
 # OS files
 Thumbs.db
+
+# Go binaries
+backend/jottin-backend
+*.exe
+*.exe~
