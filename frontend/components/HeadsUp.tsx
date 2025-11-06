@@ -88,7 +88,9 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
       />
 
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="font-semibold text-gray-900 dark:text-white">Heads Up</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-white">
+          Heads Up
+        </h2>
       </div>
 
       {showHeadsUpContent && (
@@ -104,7 +106,10 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                 Related Notes
               </h3>
               {relevantNotes.map(note => (
-                <div key={note.id} className="p-3 bg-gray-200 dark:bg-gray-800/50 rounded-lg">
+                <div
+                  key={note.id}
+                  className="p-3 bg-gray-200 dark:bg-gray-800/50 rounded-lg"
+                >
                   <p className="font-semibold text-gray-900 dark:text-white truncate">
                     {note.title}
                   </p>

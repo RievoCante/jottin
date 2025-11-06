@@ -126,13 +126,19 @@ const NoteList: React.FC<NoteListProps> = ({
   ) : (
     <>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Notes
+        </h1>
         <div className="flex items-center gap-4 mt-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
           <button className="text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white pb-1">
             All
           </button>
-          <button className="hover:text-gray-900 dark:hover:text-white">Created by me</button>
-          <button className="hover:text-gray-900 dark:hover:text-white">Shared with me</button>
+          <button className="hover:text-gray-900 dark:hover:text-white">
+            Created by me
+          </button>
+          <button className="hover:text-gray-900 dark:hover:text-white">
+            Shared with me
+          </button>
         </div>
       </div>
     </>

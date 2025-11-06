@@ -90,7 +90,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-8 h-8 bg-pink-300 rounded-lg flex items-center justify-center font-bold text-black">
             R
           </div>
-          <span className="font-semibold text-gray-900 dark:text-white">Ravit Chutivisuth</span>
+          <span className="font-semibold text-gray-900 dark:text-white">
+            Ravit Chutivisuth
+          </span>
         </button>
 
         {isProfileMenuOpen && (
