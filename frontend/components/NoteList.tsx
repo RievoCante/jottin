@@ -129,17 +129,6 @@ const NoteList: React.FC<NoteListProps> = ({
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Notes
         </h1>
-        <div className="flex items-center gap-4 mt-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
-          <button className="text-gray-900 dark:text-white border-b-2 border-gray-900 dark:border-white pb-1">
-            All
-          </button>
-          <button className="hover:text-gray-900 dark:hover:text-white">
-            Created by me
-          </button>
-          <button className="hover:text-gray-900 dark:hover:text-white">
-            Shared with me
-          </button>
-        </div>
       </div>
     </>
   );
@@ -158,11 +147,12 @@ const NoteList: React.FC<NoteListProps> = ({
                   {group}
                 </h2>
                 <div className="space-y-1">
-                  {notesInGroup.map(note => {
-                    const noteCollection = note.collectionId
-                      ? collectionsMap.get(note.collectionId)
-                      : null;
-                    return (
+                {notesInGroup.map(note => {
+                  const noteCollectionIds = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
+                  const noteCollections = noteCollectionIds
+                    .map(id => collectionsMap.get(id))
+                    .filter(Boolean);
+                  return (
                       <button
                         key={note.id}
                         onClick={() => onNoteSelect(note.id)}
@@ -178,11 +168,14 @@ const NoteList: React.FC<NoteListProps> = ({
                               <p className="font-semibold text-gray-900 dark:text-white truncate">
                                 {note.title}
                               </p>
-                              {noteCollection && (
-                                <span className="text-xs bg-green-100 dark:bg-green-900/70 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full shrink-0">
-                                  {noteCollection.name}
+                              {noteCollections.map(collection => (
+                                <span 
+                                  key={collection!.id}
+                                  className="text-xs bg-green-100 dark:bg-green-900/70 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full shrink-0"
+                                >
+                                  {collection!.icon} {collection!.name}
                                 </span>
-                              )}
+                              ))}
                             </div>
                             <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                               {note.content.substring(0, 60)}

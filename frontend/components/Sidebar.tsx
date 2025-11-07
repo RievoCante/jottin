@@ -6,12 +6,15 @@ import {
   faBookmark,
   faChevronDown,
   faUpload,
+  faDownload,
   faMoon,
   faGear,
   faTrash,
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { fileSystemService } from '../services/fileSystemService';
+import Settings from './Settings';
 
 interface SidebarProps {
   collections: Collection[];
@@ -21,10 +24,9 @@ interface SidebarProps {
   onNoteSelect: (note: Note) => void;
   onCollectionSelect: (collectionId: string | null) => void;
   onCreateNote: () => void;
+  onImportNotes?: (notes: Note[], collections: Collection[]) => void;
+  onSyncStatusChange?: (enabled: boolean) => void;
 }
-
-const INITIAL_NOTE_LIMIT = 3;
-const INITIAL_COLLECTION_LIMIT = 5;
 
 const Sidebar: React.FC<SidebarProps> = ({
   collections,
@@ -34,22 +36,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   onNoteSelect,
   onCollectionSelect,
   onCreateNote,
+  onImportNotes,
+  onSyncStatusChange,
 }) => {
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
-  const [isCollectionsExpanded, setIsCollectionsExpanded] = useState(false);
+  const [isNotesVisible, setIsNotesVisible] = useState(true);
+  const [isCollectionsVisible, setIsCollectionsVisible] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
 
   const pinnedNotes = notes.filter(n => n.isPinned);
   const allNotesExceptPinned = notes.filter(n => !n.isPinned);
 
-  const notesToShow = isNotesExpanded
-    ? allNotesExceptPinned
-    : allNotesExceptPinned.slice(0, INITIAL_NOTE_LIMIT);
-  const collectionsToShow = isCollectionsExpanded
-    ? collections
-    : collections.slice(0, INITIAL_COLLECTION_LIMIT);
+  const notesToShow = isNotesVisible ? allNotesExceptPinned.slice(0, 5) : [];
+  const collectionsToShow = isCollectionsVisible ? collections.slice(0, 5) : [];
 
   const handleCollectionClick = (collectionId: string) => {
     if (collectionId === activeCollectionId) {
@@ -80,8 +83,63 @@ const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
+  const handleExportNotes = async () => {
+    setIsExporting(true);
+    try {
+      const dirHandle = await fileSystemService.selectFolder();
+      if (dirHandle) {
+        const result = await fileSystemService.exportToFolder(
+          notes,
+          collections,
+          dirHandle
+        );
+        alert(
+          `Export complete!\n${result.success} notes exported successfully.\n${result.failed} notes failed.`
+        );
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      const errorMessage = (error as Error).message;
+
+      if (errorMessage?.startsWith('PROTECTED_FOLDER:')) {
+        alert(
+          '⚠️ Protected Folder\n\n' +
+            errorMessage.replace('PROTECTED_FOLDER: ', '') +
+            '\n\n💡 Tip: Create a new folder like "JottinNotes" in your desired location and select that instead.'
+        );
+      } else {
+        alert('Failed to export notes. Please try again.');
+      }
+    } finally {
+      setIsExporting(false);
+      setIsProfileMenuOpen(false);
+    }
+  };
+
+  const handleImportNotes = async () => {
+    if (!onImportNotes) return;
+
+    setIsImporting(true);
+    try {
+      const result = await fileSystemService.importFromFiles();
+
+      if (result.notes.length > 0) {
+        onImportNotes(result.notes, result.collections);
+        alert(
+          `✅ Import complete!\n\n${result.notes.length} note${result.notes.length > 1 ? 's' : ''} imported successfully.`
+        );
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('Failed to import notes. Please try again.');
+    } finally {
+      setIsImporting(false);
+      setIsProfileMenuOpen(false);
+    }
+  };
+
   return (
-    <aside className="w-72 bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col p-3 text-sm">
+    <aside className="w-80 lg:w-72 h-screen bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col p-3 text-sm overflow-y-auto">
       <div className="relative mb-4" ref={menuRef}>
         <button
           onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -96,22 +154,22 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {isProfileMenuOpen && (
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-2xl z-50 border border-gray-200 text-sm">
+          <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-[#1E1E1E] rounded-lg shadow-2xl z-50 border border-gray-200 dark:border-gray-700 text-sm">
             {/* Profile Header */}
-            <div className="p-4 border-b border-gray-200">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-pink-300 rounded-lg flex items-center justify-center font-bold text-black text-lg">
                   R
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-gray-900 dark:text-white">
                     Ravit Chutivisuth
                   </div>
-                  <div className="text-xs text-gray-600 truncate">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     putter.ravit@gmail.com
                   </div>
                 </div>
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs font-medium">
                   Free
                 </span>
               </div>
@@ -119,14 +177,27 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Menu Items */}
             <div className="p-2">
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors">
+              <button
+                onClick={handleExportNotes}
+                disabled={isExporting}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
+              >
                 <FontAwesomeIcon icon={faUpload} className="w-5 h-5" />
-                <span>Import notes</span>
+                <span>{isExporting ? 'Exporting...' : 'Export notes'}</span>
+              </button>
+
+              <button
+                onClick={handleImportNotes}
+                disabled={isImporting}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
+              >
+                <FontAwesomeIcon icon={faDownload} className="w-5 h-5" />
+                <span>{isImporting ? 'Importing...' : 'Import notes'}</span>
               </button>
 
               <button
                 onClick={toggleTheme}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <FontAwesomeIcon icon={faMoon} className="w-5 h-5" />
@@ -151,17 +222,23 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </button>
 
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors">
+              <button
+                onClick={() => {
+                  setIsSettingsOpen(true);
+                  setIsProfileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+              >
                 <FontAwesomeIcon icon={faGear} className="w-5 h-5" />
                 <span>Settings</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors">
+              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
                 <FontAwesomeIcon icon={faTrash} className="w-5 h-5" />
                 <span>Trash</span>
               </button>
 
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 text-gray-700 transition-colors">
+              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
                 <FontAwesomeIcon
                   icon={faRightFromBracket}
                   className="w-5 h-5"
@@ -171,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {/* Last Synced */}
-            <div className="p-3 border-t border-gray-200 text-xs text-gray-500">
+            <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
               Last synced at {getLastSyncTime()}
             </div>
           </div>
@@ -214,80 +291,74 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="mb-4">
           <button
-            onClick={() => onCollectionSelect(null)}
-            className={`w-full text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md ${
-              activeCollectionId === null
-                ? 'bg-gray-200 dark:bg-gray-700/50 text-gray-900 dark:text-white'
-                : 'hover:bg-gray-200 dark:hover:bg-gray-800'
-            }`}
+            onClick={() => setIsNotesVisible(!isNotesVisible)}
+            className="w-full text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md hover:bg-gray-200 dark:hover:bg-gray-800"
           >
-            <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4" />
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              className={`w-4 h-4 transition-transform ${!isNotesVisible ? '-rotate-90' : ''}`}
+            />
             <span>Notes</span>
           </button>
-          <ul>
-            {notesToShow.map(note => (
-              <li key={note.id}>
-                <button
-                  onClick={() => onNoteSelect(note)}
-                  className={`w-full text-left p-2 rounded-md truncate ${
-                    activeNoteId === note.id
-                      ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
-                      : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
-                  }`}
-                >
-                  {note.title}
-                </button>
-              </li>
-            ))}
-            {!isNotesExpanded &&
-              allNotesExceptPinned.length > INITIAL_NOTE_LIMIT && (
-                <li>
+          {isNotesVisible && (
+            <ul>
+              {notesToShow.map(note => (
+                <li key={note.id}>
                   <button
-                    onClick={() => setIsNotesExpanded(true)}
-                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+                    onClick={() => onNoteSelect(note)}
+                    className={`w-full text-left p-2 rounded-md truncate ${
+                      activeNoteId === note.id
+                        ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
+                    }`}
                   >
-                    See All
+                    {note.title}
                   </button>
                 </li>
-              )}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div>
-          <h3 className="flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold">
-            <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4" />
+          <button
+            onClick={() => setIsCollectionsVisible(!isCollectionsVisible)}
+            className="w-full text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md hover:bg-gray-200 dark:hover:bg-gray-800"
+          >
+            <FontAwesomeIcon
+              icon={faChevronDown}
+              className={`w-4 h-4 transition-transform ${!isCollectionsVisible ? '-rotate-90' : ''}`}
+            />
             <span>Collections</span>
-          </h3>
-          <ul>
-            {collectionsToShow.map(collection => (
-              <li key={collection.id}>
-                <button
-                  onClick={() => handleCollectionClick(collection.id)}
-                  className={`w-full text-left p-2 rounded-md flex items-center gap-2 ${
-                    activeCollectionId === collection.id
-                      ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
-                      : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
-                  }`}
-                >
-                  <span>{collection.icon}</span>
-                  <span className="truncate">{collection.name}</span>
-                </button>
-              </li>
-            ))}
-            {!isCollectionsExpanded &&
-              collections.length > INITIAL_COLLECTION_LIMIT && (
-                <li>
+          </button>
+          {isCollectionsVisible && (
+            <ul>
+              {collectionsToShow.map(collection => (
+                <li key={collection.id}>
                   <button
-                    onClick={() => setIsCollectionsExpanded(true)}
-                    className="w-full text-left p-2 rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+                    onClick={() => handleCollectionClick(collection.id)}
+                    className={`w-full text-left p-2 rounded-md flex items-center gap-2 ${
+                      activeCollectionId === collection.id
+                        ? 'bg-indigo-100 dark:bg-indigo-600/30 text-indigo-900 dark:text-white'
+                        : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300'
+                    }`}
                   >
-                    See All
+                    <span>{collection.icon}</span>
+                    <span className="truncate">{collection.name}</span>
                   </button>
                 </li>
-              )}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
+
+      <Settings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        collections={collections}
+        onSyncStatusChange={onSyncStatusChange}
+      />
     </aside>
   );
 };

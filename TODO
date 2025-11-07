@@ -1,0 +1,8 @@
+Todo:
+  ✔ import/export notes to MD format @done(25-11-07 11:33)
+  ✔ after clean up note, it doesn't show properly @done(25-11-06 17:18)
+  ☐ use user api or local llm for the ai assistant
+  ☐ make sure that the user's note is secured and private. (e2e encryption)
+  ☐ capacitorjs to make it cross platform
+  ☐ chat history
+  ✔ search with ctrl/cmd + k @done(25-11-07 12:33)

@@ -79,12 +79,12 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
 
   return (
     <aside
-      className="bg-gray-50 dark:bg-black border-l border-gray-200 dark:border-gray-800 flex flex-col relative"
-      style={{ width: `${width}px` }}
+      className="bg-gray-50 dark:bg-black border-l border-gray-200 dark:border-gray-800 flex flex-col relative h-screen w-full lg:w-auto overflow-y-auto"
+      style={{ width: window.innerWidth >= 1024 ? `${width}px` : '100%' }}
     >
       <div
         onMouseDown={onResizeStart}
-        className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize z-10"
+        className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize z-10 hidden lg:block"
       />
 
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
