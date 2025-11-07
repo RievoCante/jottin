@@ -154,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         {isProfileMenuOpen && (
-          <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-[#1E1E1E] rounded-lg shadow-2xl z-50 border border-gray-200 dark:border-gray-700 text-sm">
+          <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1E1E1E] rounded-lg shadow-2xl z-50 border border-gray-200 dark:border-gray-700 text-sm">
             {/* Profile Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
