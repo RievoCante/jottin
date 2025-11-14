@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { UserButton, useUser } from '@clerk/clerk-react';
 import { Note, Collection } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -42,6 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isSettingsOpen,
   setIsSettingsOpen,
 }) => {
+  const { user } = useUser();
   const [isNotesVisible, setIsNotesVisible] = useState(true);
   const [isCollectionsVisible, setIsCollectionsVisible] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -142,119 +144,41 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-80 lg:w-72 h-screen bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col p-3 text-sm overflow-y-auto">
-      <div className="relative mb-4" ref={menuRef}>
-        <button
-          onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-          className="flex items-center gap-2 p-2 w-full rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-        >
-          <div className="w-8 h-8 bg-pink-300 rounded-lg flex items-center justify-center font-bold text-black">
-            R
+      {/* User Profile with Clerk */}
+      <div className="mb-4 p-3 rounded-lg bg-white dark:bg-[#1E1E1E] border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 mb-3">
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'w-10 h-10',
+                userButtonPopoverCard: 'shadow-xl',
+              },
+            }}
+            afterSignOutUrl="/"
+          />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {user?.fullName || user?.primaryEmailAddress?.emailAddress}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {user?.primaryEmailAddress?.emailAddress}
+            </p>
           </div>
-          <span className="font-semibold text-gray-900 dark:text-white">
-            Ravit Chutivisuth
+        </div>
+
+        {/* Settings Button */}
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+        >
+          <FontAwesomeIcon
+            icon={faGear}
+            className="w-4 h-4 text-gray-600 dark:text-gray-400"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            Settings
           </span>
         </button>
-
-        {isProfileMenuOpen && (
-          <div className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1E1E1E] rounded-lg shadow-2xl z-50 border border-gray-200 dark:border-gray-700 text-sm">
-            {/* Profile Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-pink-300 rounded-lg flex items-center justify-center font-bold text-black text-lg">
-                  R
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-900 dark:text-white">
-                    Ravit Chutivisuth
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                    putter.ravit@gmail.com
-                  </div>
-                </div>
-                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded text-xs font-medium">
-                  Free
-                </span>
-              </div>
-            </div>
-
-            {/* Menu Items */}
-            <div className="p-2">
-              <button
-                onClick={handleExportNotes}
-                disabled={isExporting}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
-              >
-                <FontAwesomeIcon icon={faUpload} className="w-5 h-5" />
-                <span>{isExporting ? 'Exporting...' : 'Export notes'}</span>
-              </button>
-
-              <button
-                onClick={handleImportNotes}
-                disabled={isImporting}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors disabled:opacity-50"
-              >
-                <FontAwesomeIcon icon={faDownload} className="w-5 h-5" />
-                <span>{isImporting ? 'Importing...' : 'Import notes'}</span>
-              </button>
-
-              <button
-                onClick={toggleTheme}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <FontAwesomeIcon icon={faMoon} className="w-5 h-5" />
-                  <span>Dark mode</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                      theme === 'dark' ? 'bg-gray-600' : 'bg-gray-300'
-                    }`}
-                    onClick={e => {
-                      e.stopPropagation();
-                      toggleTheme();
-                    }}
-                  >
-                    <div
-                      className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
-                      } mt-0.5`}
-                    />
-                  </div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsSettingsOpen(true);
-                  setIsProfileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
-              >
-                <FontAwesomeIcon icon={faGear} className="w-5 h-5" />
-                <span>Settings</span>
-              </button>
-
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
-                <FontAwesomeIcon icon={faTrash} className="w-5 h-5" />
-                <span>Trash</span>
-              </button>
-
-              <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors">
-                <FontAwesomeIcon
-                  icon={faRightFromBracket}
-                  className="w-5 h-5"
-                />
-                <span>Sign out</span>
-              </button>
-            </div>
-
-            {/* Last Synced */}
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-              Last synced at {getLastSyncTime()}
-            </div>
-          </div>
-        )}
       </div>
 
       <button
@@ -354,7 +278,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </div>
-
     </aside>
   );
 };

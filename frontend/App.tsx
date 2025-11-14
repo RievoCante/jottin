@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { AuthGuard } from './components/AuthGuard';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import HeadsUp from './components/HeadsUp';
@@ -183,7 +184,8 @@ const App: React.FC = () => {
         if (activeNote?.id === noteId) {
           const notesToConsider = activeCollectionId
             ? newNotes.filter(n => {
-                const noteCollections = n.collectionIds || (n.collectionId ? [n.collectionId] : []);
+                const noteCollections =
+                  n.collectionIds || (n.collectionId ? [n.collectionId] : []);
                 return noteCollections.includes(activeCollectionId);
               })
             : newNotes;
@@ -220,8 +222,9 @@ const App: React.FC = () => {
     if (activeNote) {
       const hasDefaultTitle = activeNote.title === 'New Note';
       const hasNoContent = !activeNote.content.trim();
-      const isEmpty = (hasDefaultTitle || !activeNote.title.trim()) && hasNoContent;
-      
+      const isEmpty =
+        (hasDefaultTitle || !activeNote.title.trim()) && hasNoContent;
+
       if (isEmpty) {
         await handleDeleteNote(activeNote.id);
       }
@@ -283,7 +286,8 @@ const App: React.FC = () => {
 
   const displayedNotes = activeCollectionId
     ? notes.filter(note => {
-        const noteCollections = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
+        const noteCollections =
+          note.collectionIds || (note.collectionId ? [note.collectionId] : []);
         return noteCollections.includes(activeCollectionId);
       })
     : notes;
@@ -300,182 +304,184 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-100 dark:bg-[#171717] min-h-screen text-gray-900 dark:text-gray-300 font-sans flex antialiased">
-      {/* Mobile Overlay */}
-      {(isMobileSidebarOpen || isMobileHeadsUpOpen) && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => {
-            setIsMobileSidebarOpen(false);
-            setIsMobileHeadsUpOpen(false);
-          }}
-        />
-      )}
+    <AuthGuard>
+      <div className="bg-gray-100 dark:bg-[#171717] min-h-screen text-gray-900 dark:text-gray-300 font-sans flex antialiased">
+        {/* Mobile Overlay */}
+        {(isMobileSidebarOpen || isMobileHeadsUpOpen) && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => {
+              setIsMobileSidebarOpen(false);
+              setIsMobileHeadsUpOpen(false);
+            }}
+          />
+        )}
 
-      {/* Sidebar - Hidden on mobile, slides in when open */}
-      <div
-        className={`
+        {/* Sidebar - Hidden on mobile, slides in when open */}
+        <div
+          className={`
           fixed lg:static inset-y-0 left-0 z-50 lg:z-auto
           transform transition-transform duration-300 ease-in-out
           ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
-      >
-        <Sidebar
-          collections={collections}
-          notes={notes}
-          activeNoteId={activeNote?.id}
-          activeCollectionId={activeCollectionId}
-          onNoteSelect={note => {
-            handleSelectNote(note.id);
-            setIsMobileSidebarOpen(false);
-          }}
-          onCollectionSelect={collectionId => {
-            handleSelectCollection(collectionId);
-            setIsMobileSidebarOpen(false);
-          }}
-          onCreateNote={() => {
-            createNewNote('');
-            setIsMobileSidebarOpen(false);
-          }}
-          onImportNotes={handleImportNotes}
-          onSyncStatusChange={setIsSyncEnabled}
-          isSettingsOpen={isSettingsOpen}
-          setIsSettingsOpen={setIsSettingsOpen}
-        />
-      </div>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col relative min-w-0">
-        {/* Mobile Header with Menu Buttons */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-            aria-label="Toggle menu"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
-          <h1 className="text-lg font-semibold">Jottin</h1>
-          <button
-            onClick={() => setIsMobileHeadsUpOpen(!isMobileHeadsUpOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-            aria-label="Toggle chat"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
-          </button>
+        >
+          <Sidebar
+            collections={collections}
+            notes={notes}
+            activeNoteId={activeNote?.id}
+            activeCollectionId={activeCollectionId}
+            onNoteSelect={note => {
+              handleSelectNote(note.id);
+              setIsMobileSidebarOpen(false);
+            }}
+            onCollectionSelect={collectionId => {
+              handleSelectCollection(collectionId);
+              setIsMobileSidebarOpen(false);
+            }}
+            onCreateNote={() => {
+              createNewNote('');
+              setIsMobileSidebarOpen(false);
+            }}
+            onImportNotes={handleImportNotes}
+            onSyncStatusChange={setIsSyncEnabled}
+            isSettingsOpen={isSettingsOpen}
+            setIsSettingsOpen={setIsSettingsOpen}
+          />
         </div>
 
-        {/* Sync Status Indicator */}
-        <div className="absolute top-4 right-4 z-10 hidden lg:block">
-          <SyncStatus isSyncEnabled={isSyncEnabled} />
-        </div>
-        
-        {activeNote ? (
-          <MainContent
-            key={activeNote.id}
-            note={activeNote}
-            collections={collections}
-            onNoteChange={handleNoteChange}
-            createNewNote={createNewNote}
-            onCleanUp={handleCleanUpNote}
-            onTogglePin={() => handleTogglePinNote(activeNote.id)}
-            onDelete={() => handleDeleteNote(activeNote.id)}
-            onGoHome={handleGoHome}
-          />
-        ) : (
-          <NoteList
-            notes={displayedNotes}
-            onNoteSelect={handleSelectNote}
-            onCreateNote={() => createNewNote('')}
-            collection={activeCollection}
-            collections={collections}
-          />
-        )}
-      </main>
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col relative min-w-0">
+          {/* Mobile Header with Menu Buttons */}
+          <div className="lg:hidden sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            <h1 className="text-lg font-semibold">Jottin</h1>
+            <button
+              onClick={() => setIsMobileHeadsUpOpen(!isMobileHeadsUpOpen)}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+              aria-label="Toggle chat"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                />
+              </svg>
+            </button>
+          </div>
 
-      {/* HeadsUp - Hidden on mobile/tablet, slides in from right on mobile when toggled */}
-      <div
-        className={`
+          {/* Sync Status Indicator */}
+          <div className="absolute top-4 right-4 z-10 hidden lg:block">
+            <SyncStatus isSyncEnabled={isSyncEnabled} />
+          </div>
+
+          {activeNote ? (
+            <MainContent
+              key={activeNote.id}
+              note={activeNote}
+              collections={collections}
+              onNoteChange={handleNoteChange}
+              createNewNote={createNewNote}
+              onCleanUp={handleCleanUpNote}
+              onTogglePin={() => handleTogglePinNote(activeNote.id)}
+              onDelete={() => handleDeleteNote(activeNote.id)}
+              onGoHome={handleGoHome}
+            />
+          ) : (
+            <NoteList
+              notes={displayedNotes}
+              onNoteSelect={handleSelectNote}
+              onCreateNote={() => createNewNote('')}
+              collection={activeCollection}
+              collections={collections}
+            />
+          )}
+        </main>
+
+        {/* HeadsUp - Hidden on mobile/tablet, slides in from right on mobile when toggled */}
+        <div
+          className={`
           fixed lg:static inset-y-0 right-0 z-50 lg:z-auto
           transform transition-transform duration-300 ease-in-out
           ${isMobileHeadsUpOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
           hidden lg:block
           ${isMobileHeadsUpOpen ? '!block' : ''}
         `}
-      >
-        <HeadsUp
-          notesContext={notes}
-          activeNote={activeNote}
-          relevantNotes={relevantNotes}
-          isLoading={isLoadingHeadsUp}
-          width={headsUpWidth}
-          onResizeStart={handleMouseDownResize}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+        >
+          <HeadsUp
+            notesContext={notes}
+            activeNote={activeNote}
+            relevantNotes={relevantNotes}
+            isLoading={isLoadingHeadsUp}
+            width={headsUpWidth}
+            onResizeStart={handleMouseDownResize}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        </div>
+
+        {/* Floating Action Button - Mobile Only */}
+        <button
+          onClick={() => createNewNote('')}
+          className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-95"
+          aria-label="Create new note"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+        </button>
+
+        {/* Search Modal */}
+        <SearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          notes={notes}
+          collections={collections}
+          onNoteSelect={handleSelectNote}
+        />
+
+        {/* Settings Modal */}
+        <Settings
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          collections={collections}
+          onSyncStatusChange={setIsSyncEnabled}
         />
       </div>
-
-      {/* Floating Action Button - Mobile Only */}
-      <button
-        onClick={() => createNewNote('')}
-        className="lg:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-95"
-        aria-label="Create new note"
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 4v16m8-8H4"
-          />
-        </svg>
-      </button>
-
-      {/* Search Modal */}
-      <SearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-        notes={notes}
-        collections={collections}
-        onNoteSelect={handleSelectNote}
-      />
-
-      {/* Settings Modal */}
-      <Settings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        collections={collections}
-        onSyncStatusChange={setIsSyncEnabled}
-      />
-    </div>
+    </AuthGuard>
   );
 };
 

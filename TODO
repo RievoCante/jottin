@@ -8,3 +8,4 @@ Todo:
   ✔ search with ctrl/cmd + k @done(25-11-07 12:33)
   ☐ manage notes in folder/collection structure
   ☐ user can install local llm or put their own api key
+  ☐ keep user API key secure and private.

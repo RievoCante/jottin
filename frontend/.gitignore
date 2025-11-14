@@ -1,0 +1,18 @@
+node_modules/
+dist
+build
+.vite
+coverage
+.DS_Store
+*.log
+*.env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+/*.local
+/.cache
+/out
+# Optional Vite/React/TypeScript/Clerk artifacts (if any)
+*.tsbuildinfo

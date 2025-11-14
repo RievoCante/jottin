@@ -1,14 +1,9 @@
 // Service to call backend AI endpoints
 import { Note } from '../types';
 import { db } from './database';
+import { apiClient } from './apiClient';
 
 class LLMService {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-  }
-
   private async getSettings() {
     const settings = await db.settings.get('sync-settings');
     return {
@@ -25,18 +20,20 @@ class LLMService {
         throw new Error('API key not configured');
       }
 
-      const response = await fetch(`${this.baseUrl}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
-        },
-        body: JSON.stringify({
+      // Use apiClient for authenticated requests
+      const response = await apiClient.post(
+        '/api/chat',
+        {
           provider,
           prompt,
           contextNotes,
-        }),
-      });
+        },
+        {
+          headers: {
+            'X-API-Key': apiKey, // Add user's AI API key
+          },
+        }
+      );
 
       if (!response.ok) {
         // Try to get error message from response
@@ -83,18 +80,20 @@ class LLMService {
         return [];
       }
 
-      const response = await fetch(`${this.baseUrl}/api/notes/relevant`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
-        },
-        body: JSON.stringify({
+      // Use apiClient for authenticated requests
+      const response = await apiClient.post(
+        '/api/notes/relevant',
+        {
           provider,
           currentContent,
           allNotes,
-        }),
-      });
+        },
+        {
+          headers: {
+            'X-API-Key': apiKey, // Add user's AI API key
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -116,17 +115,19 @@ class LLMService {
         throw new Error('API key not configured');
       }
 
-      const response = await fetch(`${this.baseUrl}/api/notes/cleanup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey,
-        },
-        body: JSON.stringify({
+      // Use apiClient for authenticated requests
+      const response = await apiClient.post(
+        '/api/notes/cleanup',
+        {
           provider,
           content,
-        }),
-      });
+        },
+        {
+          headers: {
+            'X-API-Key': apiKey, // Add user's AI API key
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -145,15 +146,10 @@ class LLMService {
     apiKey: string
   ): Promise<{ valid: boolean; error?: string; message?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/validate-key`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider,
-          apiKey,
-        }),
+      // Use apiClient for authenticated requests
+      const response = await apiClient.post('/api/validate-key', {
+        provider,
+        apiKey,
       });
 
       if (!response.ok) {
