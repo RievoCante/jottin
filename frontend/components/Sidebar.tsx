@@ -14,7 +14,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { fileSystemService } from '../services/fileSystemService';
-import Settings from './Settings';
 
 interface SidebarProps {
   collections: Collection[];
@@ -26,6 +25,8 @@ interface SidebarProps {
   onCreateNote: () => void;
   onImportNotes?: (notes: Note[], collections: Collection[]) => void;
   onSyncStatusChange?: (enabled: boolean) => void;
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (open: boolean) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -38,13 +39,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCreateNote,
   onImportNotes,
   onSyncStatusChange,
+  isSettingsOpen,
+  setIsSettingsOpen,
 }) => {
   const [isNotesVisible, setIsNotesVisible] = useState(true);
   const [isCollectionsVisible, setIsCollectionsVisible] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -353,12 +355,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <Settings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        collections={collections}
-        onSyncStatusChange={onSyncStatusChange}
-      />
     </aside>
   );
 };

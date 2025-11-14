@@ -43,6 +43,7 @@ func main() {
 	mux.HandleFunc("/api/chat", aiHandlers.HandleChat)
 	mux.HandleFunc("/api/notes/relevant", aiHandlers.HandleRelevantNotes)
 	mux.HandleFunc("/api/notes/cleanup", aiHandlers.HandleCleanup)
+	mux.HandleFunc("/api/validate-key", aiHandlers.HandleValidateKey)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -52,7 +53,7 @@ func main() {
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization", "X-API-Key"},
 		AllowCredentials: false, // Must be false when using "*" for origins
 	})
 

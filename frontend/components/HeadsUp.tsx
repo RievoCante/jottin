@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Note, ChatMessage } from '../types';
-import geminiService from '../services/geminiService';
+import llmService from '../services/llmService';
+import { db } from '../services/database';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faWandMagicSparkles,
@@ -16,6 +17,7 @@ interface HeadsUpProps {
   isLoading: boolean;
   width: number;
   onResizeStart: (e: React.MouseEvent) => void;
+  onOpenSettings: () => void;
 }
 
 const HeadsUp: React.FC<HeadsUpProps> = ({
@@ -25,10 +27,28 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
   isLoading,
   width,
   onResizeStart,
+  onOpenSettings,
 }) => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isAIConfigured, setIsAIConfigured] = useState(false);
+
+  useEffect(() => {
+    checkAIConfiguration();
+
+    // Re-check periodically to detect when settings are saved
+    const interval = setInterval(checkAIConfiguration, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkAIConfiguration = async () => {
+    const settings = await db.settings.get('sync-settings');
+    const hasProvider =
+      settings?.aiProvider === 'gemini' || settings?.aiProvider === 'openai';
+    const hasKey = !!settings?.aiApiKey;
+    setIsAIConfigured(hasProvider && hasKey);
+  };
 
   const submitQuery = async (query: string) => {
     if (!query.trim() || isChatLoading) return;
@@ -43,7 +63,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
     setIsChatLoading(true);
 
     try {
-      const aiResponse = await geminiService.getChatResponse(
+      const aiResponse = await llmService.getChatResponse(
         query,
         activeNote ? [activeNote, ...notesContext] : notesContext
       );
@@ -211,29 +231,51 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-          <form onSubmit={handleSendMessage} className="relative">
-            <FontAwesomeIcon
-              icon={faPlus}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-400 pointer-events-none"
-            />
-            <input
-              type="text"
-              value={userInput}
-              onChange={e => setUserInput(e.target.value)}
-              placeholder="Tell or ask Mem something"
-              className="w-full bg-gray-100 dark:bg-[#1E1E1E] border border-gray-300 dark:border-gray-700 rounded-full pl-11 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 dark:text-gray-300"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-400 dark:bg-gray-600 rounded-full hover:bg-indigo-600 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors"
-              disabled={isChatLoading || !userInput.trim()}
-            >
+          {!isAIConfigured ? (
+            <div className="text-center py-4">
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                Configure your AI provider to start chatting
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={onOpenSettings}
+                  className="block w-full p-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
+                >
+                  1. Add your API key
+                </button>
+                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-50 cursor-not-allowed text-sm text-gray-600 dark:text-gray-400">
+                  2. Download Ollama (Coming soon)
+                </div>
+                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg opacity-50 cursor-not-allowed text-sm text-gray-600 dark:text-gray-400">
+                  3. Subscribe to Jottin Pro (Coming soon)
+                </div>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSendMessage} className="relative">
               <FontAwesomeIcon
-                icon={faArrowUp}
-                className="w-4 h-4 text-white"
+                icon={faPlus}
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-400 pointer-events-none"
               />
-            </button>
-          </form>
+              <input
+                type="text"
+                value={userInput}
+                onChange={e => setUserInput(e.target.value)}
+                placeholder="Tell or ask Mem something"
+                className="w-full bg-gray-100 dark:bg-[#1E1E1E] border border-gray-300 dark:border-gray-700 rounded-full pl-11 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-gray-900 dark:text-gray-300"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-gray-400 dark:bg-gray-600 rounded-full hover:bg-indigo-600 dark:hover:bg-indigo-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors"
+                disabled={isChatLoading || !userInput.trim()}
+              >
+                <FontAwesomeIcon
+                  icon={faArrowUp}
+                  className="w-4 h-4 text-white"
+                />
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </aside>

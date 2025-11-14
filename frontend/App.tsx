@@ -5,9 +5,10 @@ import HeadsUp from './components/HeadsUp';
 import NoteList from './components/NoteList';
 import SyncStatus from './components/SyncStatus';
 import SearchModal from './components/SearchModal';
+import Settings from './components/Settings';
 import { Note, Collection } from './types';
 import { db } from './services/database';
-import geminiService from './services/geminiService';
+import llmService from './services/llmService';
 import { syncManager } from './services/syncManager';
 
 const App: React.FC = () => {
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileHeadsUpOpen, setIsMobileHeadsUpOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const activeNote = notes.find(n => n.id === activeNoteId) || null;
   const activeCollection = collections.find(c => c.id === activeCollectionId);
@@ -107,7 +109,7 @@ const App: React.FC = () => {
       if (updatedNote && updates.content !== undefined) {
         setIsLoadingHeadsUp(true);
         try {
-          const relevant = await geminiService.findRelevantNotes(
+          const relevant = await llmService.findRelevantNotes(
             updates.content,
             notes.filter(n => n.id !== noteId)
           );
@@ -196,7 +198,7 @@ const App: React.FC = () => {
 
   const handleCleanUpNote = async (note: Note): Promise<string> => {
     try {
-      const cleanedContent = await geminiService.cleanUpNote(note.content);
+      const cleanedContent = await llmService.cleanUpNote(note.content);
       return cleanedContent;
     } catch (error) {
       console.error('Failed to clean up note:', error);
@@ -337,6 +339,8 @@ const App: React.FC = () => {
           }}
           onImportNotes={handleImportNotes}
           onSyncStatusChange={setIsSyncEnabled}
+          isSettingsOpen={isSettingsOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
         />
       </div>
 
@@ -430,6 +434,7 @@ const App: React.FC = () => {
           isLoading={isLoadingHeadsUp}
           width={headsUpWidth}
           onResizeStart={handleMouseDownResize}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       </div>
 
@@ -461,6 +466,14 @@ const App: React.FC = () => {
         notes={notes}
         collections={collections}
         onNoteSelect={handleSelectNote}
+      />
+
+      {/* Settings Modal */}
+      <Settings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        collections={collections}
+        onSyncStatusChange={setIsSyncEnabled}
       />
     </div>
   );

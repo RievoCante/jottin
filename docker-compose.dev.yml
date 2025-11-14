@@ -1,14 +1,19 @@
-# Docker Compose configuration for Development
+# Docker Compose configuration for Development with Hot Reloading
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "8080:8080"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PORT=8080
+    volumes:
+      # Mount source code for hot reloading
+      - ./backend:/app
+      # Exclude go mod cache for better performance
+      - go-pkg:/go/pkg
     restart: unless-stopped
     networks:
       - jottin-network
@@ -16,16 +21,29 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       args:
         - VITE_API_URL=http://localhost:8080
     ports:
-      - "5173:80"
+      - "3000:3000" # Vite dev server port (matching vite.config.ts)
+    volumes:
+      # Mount source code for hot reloading
+      - ./frontend:/app
+      # Exclude node_modules for better performance
+      - /app/node_modules
+    environment:
+      # Browser makes requests to localhost since backend is exposed on host
+      - VITE_API_URL=http://localhost:8080
+      # Enable polling for file watching (works better on some systems)
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - jottin-network
+
+volumes:
+  go-pkg:
 
 networks:
   jottin-network:

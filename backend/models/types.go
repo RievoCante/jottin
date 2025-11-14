@@ -11,17 +11,20 @@ type Note struct {
 }
 
 type ChatRequest struct {
+	Provider     string `json:"provider"`
 	Prompt       string `json:"prompt"`
 	ContextNotes []Note `json:"contextNotes"`
 }
 
 type RelevantNotesRequest struct {
+	Provider       string `json:"provider"`
 	CurrentContent string `json:"currentContent"`
 	AllNotes       []Note `json:"allNotes"`
 }
 
 type CleanupRequest struct {
-	Content string `json:"content"`
+	Provider string `json:"provider"`
+	Content  string `json:"content"`
 }
 
 type ErrorResponse struct {

@@ -9,6 +9,11 @@ export interface SyncSettings {
   lastSyncTime?: string;
   encryptionEnabled: boolean;
   encryptedKey?: string;
+  // AI Provider Settings
+  aiProvider?: 'gemini' | 'openai' | 'ollama';
+  aiApiKey?: string;
+  ollamaUrl?: string;
+  ollamaModel?: string;
 }
 
 class JottinDatabase extends Dexie {
@@ -109,6 +114,8 @@ class JottinDatabase extends Dexie {
         id: 'sync-settings',
         syncEnabled: false,
         encryptionEnabled: false,
+        aiProvider: undefined, // Force user to configure
+        aiApiKey: undefined,
       });
     }
   }
