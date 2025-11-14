@@ -179,6 +179,18 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
+  const handleRemoveApiKey = async () => {
+    if (confirm('Are you sure you want to remove your API key?')) {
+      setApiKey('');
+      setValidationStatus('idle');
+      setValidationMessage('');
+      await db.settings.update('sync-settings', {
+        aiProvider: undefined,
+        aiApiKey: '',
+      });
+    }
+  };
+
   const handleSaveAISettings = async () => {
     try {
       await db.settings.update('sync-settings', {
@@ -351,9 +363,19 @@ const Settings: React.FC<SettingsProps> = ({
                       className="mt-1 mr-3"
                     />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        Google Gemini API
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          Google Gemini API
+                        </p>
+                        {aiProvider === 'gemini' &&
+                          apiKey &&
+                          validationStatus === 'success' && (
+                            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                              Active
+                            </span>
+                          )}
+                      </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Use your own Gemini API key (fastest & most capable)
                       </p>
@@ -377,9 +399,19 @@ const Settings: React.FC<SettingsProps> = ({
                       className="mt-1 mr-3"
                     />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        OpenAI API
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          OpenAI API
+                        </p>
+                        {aiProvider === 'openai' &&
+                          apiKey &&
+                          validationStatus === 'success' && (
+                            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                              Active
+                            </span>
+                          )}
+                      </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Use your own OpenAI API key (GPT-4 & GPT-3.5)
                       </p>
@@ -438,6 +470,14 @@ const Settings: React.FC<SettingsProps> = ({
                     >
                       {isValidating ? 'Testing...' : 'Test'}
                     </button>
+                    {apiKey && (
+                      <button
+                        onClick={handleRemoveApiKey}
+                        className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors font-medium"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
 
                   {/* Validation Status */}
@@ -509,12 +549,6 @@ const Settings: React.FC<SettingsProps> = ({
             className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             Close
-          </button>
-          <button
-            onClick={handleSaveAISettings}
-            className="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Save AI Settings
           </button>
         </div>
       </div>

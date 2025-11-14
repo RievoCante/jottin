@@ -33,6 +33,9 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
   const [userInput, setUserInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAIConfigured, setIsAIConfigured] = useState(false);
+  const [aiProvider, setAiProvider] = useState<
+    'gemini' | 'openai' | 'ollama' | undefined
+  >(undefined);
 
   useEffect(() => {
     checkAIConfiguration();
@@ -48,6 +51,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
       settings?.aiProvider === 'gemini' || settings?.aiProvider === 'openai';
     const hasKey = !!settings?.aiApiKey;
     setIsAIConfigured(hasProvider && hasKey);
+    setAiProvider(settings?.aiProvider);
   };
 
   const submitQuery = async (query: string) => {
@@ -107,12 +111,6 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
         className="absolute top-0 left-0 w-1.5 h-full cursor-col-resize z-10 hidden lg:block"
       />
 
-      <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="font-semibold text-gray-900 dark:text-white">
-          Heads Up
-        </h2>
-      </div>
-
       {showHeadsUpContent && (
         <div className="p-4 space-y-4">
           {isLoading && (
@@ -147,7 +145,21 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
         className={`flex-1 flex flex-col ${showHeadsUpContent ? 'border-t border-gray-200 dark:border-gray-800' : ''}`}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="font-semibold text-gray-900 dark:text-white">Chat</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              AI Chat Bot
+            </h2>
+            {isAIConfigured && aiProvider && (
+              <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                {aiProvider === 'gemini'
+                  ? 'Gemini'
+                  : aiProvider === 'openai'
+                    ? 'OpenAI'
+                    : 'Ollama'}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <button className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700">
               <FontAwesomeIcon icon={faPlus} className="w-5 h-5" />
