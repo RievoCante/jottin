@@ -15,6 +15,7 @@ interface Window {
     session?: {
       getToken: () => Promise<string | null>;
     };
+    signOut?: () => Promise<void>;
     user?: {
       id: string;
       fullName?: string;

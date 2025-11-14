@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Note, Collection } from '../types';
+import { Note, Collection } from '../../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMicrophone,
@@ -12,8 +12,8 @@ import {
   faXmark,
   faChevronDown,
 } from '@fortawesome/free-solid-svg-icons';
-import useLiveTranscription from '../hooks/useLiveTranscription';
-import Tooltip from './Tooltip';
+import useLiveTranscription from '../../hooks/useLiveTranscription';
+import Tooltip from '../ui/Tooltip';
 
 interface MainContentProps {
   note: Note;
@@ -68,7 +68,10 @@ const MainContent: React.FC<MainContentProps> = ({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
-      if (organizeRef.current && !organizeRef.current.contains(event.target as Node)) {
+      if (
+        organizeRef.current &&
+        !organizeRef.current.contains(event.target as Node)
+      ) {
         setIsOrganizeOpen(false);
       }
     };
@@ -137,14 +140,15 @@ const MainContent: React.FC<MainContentProps> = ({
   };
 
   const handleCollectionToggle = (collectionId: string) => {
-    const currentIds = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
+    const currentIds =
+      note.collectionIds || (note.collectionId ? [note.collectionId] : []);
     const newIds = currentIds.includes(collectionId)
       ? currentIds.filter(id => id !== collectionId)
       : [...currentIds, collectionId];
-    
-    onNoteChange(note.id, { 
+
+    onNoteChange(note.id, {
       collectionIds: newIds.length > 0 ? newIds : undefined,
-      collectionId: undefined // Clear legacy field
+      collectionId: undefined, // Clear legacy field
     });
   };
 
@@ -182,7 +186,7 @@ const MainContent: React.FC<MainContentProps> = ({
 
         <div className="flex items-center">
           <Tooltip text="Close">
-            <button 
+            <button
               onClick={onGoHome}
               className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-300"
             >
@@ -200,17 +204,24 @@ const MainContent: React.FC<MainContentProps> = ({
               className="text-sm flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               {(() => {
-                const selectedIds = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
-                const selectedCollections = collections.filter(c => selectedIds.includes(c.id));
-                
+                const selectedIds =
+                  note.collectionIds ||
+                  (note.collectionId ? [note.collectionId] : []);
+                const selectedCollections = collections.filter(c =>
+                  selectedIds.includes(c.id)
+                );
+
                 if (selectedCollections.length === 0) {
                   return <span># Organize</span>;
                 }
-                
+
                 return (
                   <div className="flex items-center gap-2">
                     {selectedCollections.map(c => (
-                      <span key={c.id} className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded">
+                      <span
+                        key={c.id}
+                        className="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
+                      >
                         {c.icon} {c.name}
                       </span>
                     ))}
@@ -219,16 +230,18 @@ const MainContent: React.FC<MainContentProps> = ({
               })()}
               <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3" />
             </button>
-            
+
             {isOrganizeOpen && (
               <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-50 min-w-[200px]">
                 <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                   Select collections
                 </div>
                 {collections.map(collection => {
-                  const selectedIds = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
+                  const selectedIds =
+                    note.collectionIds ||
+                    (note.collectionId ? [note.collectionId] : []);
                   const isSelected = selectedIds.includes(collection.id);
-                  
+
                   return (
                     <button
                       key={collection.id}

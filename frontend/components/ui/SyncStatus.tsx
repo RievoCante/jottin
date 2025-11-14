@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faSync, faCloud } from '@fortawesome/free-solid-svg-icons';
-import { syncManager } from '../services/syncManager';
+import { syncManager } from '../../services/syncManager';
 
 interface SyncStatusProps {
   isSyncEnabled: boolean;

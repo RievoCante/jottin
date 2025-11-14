@@ -7,10 +7,12 @@ import {
   faSync,
   faLock,
 } from '@fortawesome/free-solid-svg-icons';
-import { syncManager } from '../services/syncManager';
-import { Collection } from '../types';
-import { db } from '../services/database';
-import llmService from '../services/llmService';
+import { syncManager } from '../../services/syncManager';
+import { Collection } from '../../types';
+import { db } from '../../services/database';
+import { SignedIn } from '@clerk/clerk-react';
+import RequireAuthNotice from '../ui/RequireAuthNotice';
+import llmService from '../../services/llmService';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -212,7 +214,7 @@ const Settings: React.FC<SettingsProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-9999">
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto m-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
@@ -339,188 +341,197 @@ const Settings: React.FC<SettingsProps> = ({
               AI Provider Configuration
             </h3>
 
-            <div className="space-y-4">
-              {/* Provider Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Choose AI Provider
-                </label>
-                <div className="space-y-3">
-                  {/* Option 1: Gemini API */}
-                  <label
-                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      aiProvider === 'gemini'
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="aiProvider"
-                      value="gemini"
-                      checked={aiProvider === 'gemini'}
-                      onChange={() => setAiProvider('gemini')}
-                      className="mt-1 mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          Google Gemini API
-                        </p>
-                        {aiProvider === 'gemini' &&
-                          apiKey &&
-                          validationStatus === 'success' && (
-                            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                              Active
-                            </span>
-                          )}
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Use your own Gemini API key (fastest & most capable)
-                      </p>
-                    </div>
+            <RequireAuthNotice
+              message="Sign in to configure AI providers, connect local LLMs, or subscribe to premium services."
+              buttonText="Sign in to configure AI"
+              className="mb-4"
+              variant="minimal"
+            />
+
+            <SignedIn>
+              <div className="space-y-4">
+                {/* Provider Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Choose AI Provider
                   </label>
-
-                  {/* Option 2: OpenAI API */}
-                  <label
-                    className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                      aiProvider === 'openai'
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="aiProvider"
-                      value="openai"
-                      checked={aiProvider === 'openai'}
-                      onChange={() => setAiProvider('openai')}
-                      className="mt-1 mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          OpenAI API
-                        </p>
-                        {aiProvider === 'openai' &&
-                          apiKey &&
-                          validationStatus === 'success' && (
-                            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                              Active
-                            </span>
-                          )}
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Use your own OpenAI API key (GPT-4 & GPT-3.5)
-                      </p>
-                    </div>
-                  </label>
-
-                  {/* Option 3: Ollama (Disabled - Future) */}
-                  <div className="flex items-start p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg opacity-50 cursor-not-allowed">
-                    <input type="radio" disabled className="mt-1 mr-3" />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        Ollama (Local LLM)
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Coming soon - Run AI locally on your machine
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Option 4: Subscription (Disabled - Future) */}
-                  <div className="flex items-start p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg opacity-50 cursor-not-allowed">
-                    <input type="radio" disabled className="mt-1 mr-3" />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        Jottin Pro Subscription
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Coming soon - No API key needed, just subscribe
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* API Key Input (shown when Gemini or OpenAI selected) */}
-              {(aiProvider === 'gemini' || aiProvider === 'openai') && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API Key
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={e => {
-                        setApiKey(e.target.value);
-                        setValidationStatus('idle'); // Reset validation on change
-                      }}
-                      placeholder="Enter your API key"
-                      className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                    <button
-                      onClick={handleTestApiKey}
-                      disabled={!apiKey || isValidating}
-                      className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                    >
-                      {isValidating ? 'Testing...' : 'Test'}
-                    </button>
-                    {apiKey && (
-                      <button
-                        onClick={handleRemoveApiKey}
-                        className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors font-medium"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Validation Status */}
-                  {validationStatus !== 'idle' && (
-                    <div
-                      className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
-                        validationStatus === 'success'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                          : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                  <div className="space-y-3">
+                    {/* Option 1: Gemini API */}
+                    <label
+                      className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        aiProvider === 'gemini'
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
-                      <span className="font-medium">
-                        {validationStatus === 'success' ? '✓' : '✗'}
-                      </span>
-                      <span>{validationMessage}</span>
-                    </div>
-                  )}
+                      <input
+                        type="radio"
+                        name="aiProvider"
+                        value="gemini"
+                        checked={aiProvider === 'gemini'}
+                        onChange={() => setAiProvider('gemini')}
+                        className="mt-1 mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            Google Gemini API
+                          </p>
+                          {aiProvider === 'gemini' &&
+                            apiKey &&
+                            validationStatus === 'success' && (
+                              <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Active
+                              </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Use your own Gemini API key (fastest & most capable)
+                        </p>
+                      </div>
+                    </label>
 
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    Get your API key from{' '}
-                    {aiProvider === 'gemini' ? (
-                      <a
-                        href="https://makersuite.google.com/app/apikey"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        Google AI Studio
-                      </a>
-                    ) : (
-                      <a
-                        href="https://platform.openai.com/api-keys"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        OpenAI Platform
-                      </a>
-                    )}
-                  </p>
+                    {/* Option 2: OpenAI API */}
+                    <label
+                      className={`flex items-start p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                        aiProvider === 'openai'
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="aiProvider"
+                        value="openai"
+                        checked={aiProvider === 'openai'}
+                        onChange={() => setAiProvider('openai')}
+                        className="mt-1 mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            OpenAI API
+                          </p>
+                          {aiProvider === 'openai' &&
+                            apiKey &&
+                            validationStatus === 'success' && (
+                              <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Active
+                              </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Use your own OpenAI API key (GPT-4 & GPT-3.5)
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* Option 3: Ollama (Disabled - Future) */}
+                    <div className="flex items-start p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg opacity-50 cursor-not-allowed">
+                      <input type="radio" disabled className="mt-1 mr-3" />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          Ollama (Local LLM)
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Coming soon - Run AI locally on your machine
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Option 4: Subscription (Disabled - Future) */}
+                    <div className="flex items-start p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg opacity-50 cursor-not-allowed">
+                      <input type="radio" disabled className="mt-1 mr-3" />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                          Jottin Pro Subscription
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          Coming soon - No API key needed, just subscribe
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* API Key Input (shown when Gemini or OpenAI selected) */}
+                {(aiProvider === 'gemini' || aiProvider === 'openai') && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {aiProvider === 'gemini' ? 'Gemini' : 'OpenAI'} API Key
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={apiKey}
+                        onChange={e => {
+                          setApiKey(e.target.value);
+                          setValidationStatus('idle'); // Reset validation on change
+                        }}
+                        placeholder="Enter your API key"
+                        className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={handleTestApiKey}
+                        disabled={!apiKey || isValidating}
+                        className="px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                      >
+                        {isValidating ? 'Testing...' : 'Test'}
+                      </button>
+                      {apiKey && (
+                        <button
+                          onClick={handleRemoveApiKey}
+                          className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors font-medium"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Validation Status */}
+                    {validationStatus !== 'idle' && (
+                      <div
+                        className={`mt-3 p-3 rounded-lg text-sm flex items-center gap-2 ${
+                          validationStatus === 'success'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        }`}
+                      >
+                        <span className="font-medium">
+                          {validationStatus === 'success' ? '✓' : '✗'}
+                        </span>
+                        <span>{validationMessage}</span>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Get your API key from{' '}
+                      {aiProvider === 'gemini' ? (
+                        <a
+                          href="https://makersuite.google.com/app/apikey"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          Google AI Studio
+                        </a>
+                      ) : (
+                        <a
+                          href="https://platform.openai.com/api-keys"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                          OpenAI Platform
+                        </a>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </SignedIn>
           </div>
 
           {/* Info Section */}

@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
+        '@/components': path.resolve(__dirname, './components'),
+        '@/layout': path.resolve(__dirname, './components/layout'),
+        '@/modals': path.resolve(__dirname, './components/modals'),
+        '@/ui': path.resolve(__dirname, './components/ui'),
+        '@/auth': path.resolve(__dirname, './components/auth'),
       },
     },
   };

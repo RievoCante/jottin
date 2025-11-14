@@ -1,8 +1,12 @@
 // Quick search modal for finding notes by title or content
 import React, { useState, useEffect, useRef } from 'react';
-import { Note, Collection } from '../types';
+import { Note, Collection } from '../../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass, faXmark, faFileLines } from '@fortawesome/free-solid-svg-icons';
+import {
+  faMagnifyingGlass,
+  faXmark,
+  faFileLines,
+} from '@fortawesome/free-solid-svg-icons';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -51,7 +55,9 @@ const SearchModal: React.FC<SearchModalProps> = ({
   useEffect(() => {
     // Scroll selected item into view
     if (resultsRef.current && selectedIndex >= 0) {
-      const selectedElement = resultsRef.current.children[selectedIndex] as HTMLElement;
+      const selectedElement = resultsRef.current.children[
+        selectedIndex
+      ] as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: 'nearest' });
       }
@@ -80,7 +86,8 @@ const SearchModal: React.FC<SearchModalProps> = ({
   };
 
   const getCollectionNames = (note: Note) => {
-    const collectionIds = note.collectionIds || (note.collectionId ? [note.collectionId] : []);
+    const collectionIds =
+      note.collectionIds || (note.collectionId ? [note.collectionId] : []);
     return collectionIds
       .map(id => collections.find(c => c.id === id))
       .filter(Boolean)
@@ -89,14 +96,14 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim()) return text;
-    
+
     const index = text.toLowerCase().indexOf(query.toLowerCase());
     if (index === -1) return text;
-    
+
     const before = text.slice(0, index);
     const match = text.slice(index, index + query.length);
     const after = text.slice(index + query.length);
-    
+
     return (
       <>
         {before}
@@ -110,21 +117,24 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
   const getContentPreview = (note: Note, query: string) => {
     if (!query.trim()) return note.content.slice(0, 100);
-    
+
     const index = note.content.toLowerCase().indexOf(query.toLowerCase());
     if (index === -1) return note.content.slice(0, 100);
-    
+
     const start = Math.max(0, index - 40);
     const end = Math.min(note.content.length, index + query.length + 60);
-    const preview = (start > 0 ? '...' : '') + note.content.slice(start, end) + (end < note.content.length ? '...' : '');
-    
+    const preview =
+      (start > 0 ? '...' : '') +
+      note.content.slice(start, end) +
+      (end < note.content.length ? '...' : '');
+
     return preview;
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+    <div className="fixed inset-0 z-100 flex items-start justify-center pt-[15vh] px-4">
       {/* Backdrop with blur */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -152,15 +162,15 @@ const SearchModal: React.FC<SearchModalProps> = ({
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
           >
-            <FontAwesomeIcon icon={faXmark} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <FontAwesomeIcon
+              icon={faXmark}
+              className="w-4 h-4 text-gray-400 dark:text-gray-500"
+            />
           </button>
         </div>
 
         {/* Search Results */}
-        <div
-          ref={resultsRef}
-          className="max-h-[60vh] overflow-y-auto"
-        >
+        <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto">
           {searchQuery && searchResults.length === 0 && (
             <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
               No notes found matching "{searchQuery}"
@@ -169,19 +179,29 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
           {!searchQuery && (
             <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-              <FontAwesomeIcon icon={faMagnifyingGlass} className="w-8 h-8 mb-2 opacity-50" />
+              <FontAwesomeIcon
+                icon={faMagnifyingGlass}
+                className="w-8 h-8 mb-2 opacity-50"
+              />
               <p className="text-sm">Start typing to search your notes...</p>
               <p className="text-xs mt-2">
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">↑</kbd>
-                {' '}
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">↓</kbd>
-                {' '}to navigate
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                  ↑
+                </kbd>{' '}
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                  ↓
+                </kbd>{' '}
+                to navigate
                 {' · '}
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">Enter</kbd>
-                {' '}to select
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                  Enter
+                </kbd>{' '}
+                to select
                 {' · '}
-                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">Esc</kbd>
-                {' '}to close
+                <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
+                  Esc
+                </kbd>{' '}
+                to close
               </p>
             </div>
           )}
@@ -193,9 +213,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                 key={note.id}
                 onClick={() => handleSelectNote(note.id)}
                 className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                  index === selectedIndex
-                    ? 'bg-gray-50 dark:bg-gray-800'
-                    : ''
+                  index === selectedIndex ? 'bg-gray-50 dark:bg-gray-800' : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -209,7 +227,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
                         {highlightMatch(note.title, searchQuery)}
                       </h3>
                       {noteCollections.map((col, idx) => (
-                        <span 
+                        <span
                           key={idx}
                           className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded shrink-0"
                         >
@@ -219,7 +237,10 @@ const SearchModal: React.FC<SearchModalProps> = ({
                     </div>
                     {note.content && (
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        {highlightMatch(getContentPreview(note, searchQuery), searchQuery)}
+                        {highlightMatch(
+                          getContentPreview(note, searchQuery),
+                          searchQuery
+                        )}
                       </p>
                     )}
                   </div>
@@ -234,4 +255,3 @@ const SearchModal: React.FC<SearchModalProps> = ({
 };
 
 export default SearchModal;
-

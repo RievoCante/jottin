@@ -9,3 +9,4 @@ Todo:
   ☐ manage notes in folder/collection structure
   ☐ user can install local llm or put their own api key
   ☐ keep user API key secure and private.
+  ☐ sync note to user cloud ex. google drive, dropbox, etc.
