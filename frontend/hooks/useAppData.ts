@@ -53,6 +53,13 @@ export const useAppData = (): UseAppDataReturn => {
         setNotes(loadedNotes);
         setCollections(loadedCollections);
         setIsSyncEnabled(syncSettings?.syncEnabled || false);
+        
+        // Initialize cloud sync if enabled
+        if (syncSettings?.cloudSyncEnabled) {
+          syncManager.initializeCloudSync().catch(err => {
+            console.error('Failed to initialize cloud sync:', err);
+          });
+        }
       } catch (error) {
         console.error('Failed to load data from IndexedDB:', error);
       } finally {
@@ -93,6 +100,8 @@ export const useAppData = (): UseAppDataReturn => {
         if (isSyncEnabled) {
           await syncManager.syncNoteToFile(newNote);
         }
+        // Sync to cloud if cloud sync is enabled
+        await syncManager.syncNoteToCloud(newNote);
 
         return newNote.id;
       } catch (error) {
@@ -124,6 +133,10 @@ export const useAppData = (): UseAppDataReturn => {
         if (isSyncEnabled && updatedNote) {
           await syncManager.syncNoteToFile(updatedNote);
         }
+        // Sync to cloud if cloud sync is enabled
+        if (updatedNote) {
+          await syncManager.syncNoteToCloud(updatedNote);
+        }
       } catch (error) {
         console.error('Failed to update note in IndexedDB:', error);
       }
@@ -143,6 +156,8 @@ export const useAppData = (): UseAppDataReturn => {
         if (isSyncEnabled) {
           await syncManager.syncDeleteToFile(noteId, noteToDelete);
         }
+        // Sync deletion to cloud if cloud sync is enabled
+        await syncManager.syncDeleteToCloud(noteId);
 
         setNotes(prevNotes => prevNotes.filter(n => n.id !== noteId));
       } catch (error) {

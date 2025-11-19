@@ -28,6 +28,13 @@ func main() {
 		port = "8080"
 	}
 
+	// Initialize database (Neon PostgreSQL)
+	database, err := services.NewDatabase()
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer database.Close()
+
 	// Initialize Gemini service
 	geminiService, err := services.NewGeminiService(apiKey)
 	if err != nil {
@@ -37,13 +44,21 @@ func main() {
 
 	// Initialize handlers
 	aiHandlers := handlers.NewAIHandlers(geminiService)
+	syncHandlers := handlers.NewSyncHandlers(database)
 
 	// Setup routes
 	mux := http.NewServeMux()
+	
+	// AI routes
 	mux.HandleFunc("/api/chat", aiHandlers.HandleChat)
 	mux.HandleFunc("/api/notes/relevant", aiHandlers.HandleRelevantNotes)
 	mux.HandleFunc("/api/notes/cleanup", aiHandlers.HandleCleanup)
 	mux.HandleFunc("/api/validate-key", aiHandlers.HandleValidateKey)
+	
+	// Sync routes (protected with auth middleware)
+	mux.HandleFunc("/api/sync/notes", handlers.AuthMiddleware(syncHandlers.HandleSyncNotes))
+	mux.HandleFunc("/api/sync/push", handlers.AuthMiddleware(syncHandlers.HandleSyncPush))
+	
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))

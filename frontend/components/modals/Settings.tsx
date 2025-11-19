@@ -6,6 +6,7 @@ import {
   faFolder,
   faSync,
   faLock,
+  faCloud,
 } from '@fortawesome/free-solid-svg-icons';
 import { syncManager } from '../../services/syncManager';
 import { Collection } from '../../types';
@@ -34,6 +35,12 @@ const Settings: React.FC<SettingsProps> = ({
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
   const [isEnablingSync, setIsEnablingSync] = useState(false);
+  
+  // Cloud Sync state
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(false);
+  const [lastCloudSyncTime, setLastCloudSyncTime] = useState<string>('');
+  const [isEnablingCloudSync, setIsEnablingCloudSync] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // AI Provider Settings
   const [aiProvider, setAiProvider] = useState<
@@ -58,6 +65,8 @@ const Settings: React.FC<SettingsProps> = ({
       setSyncFolderName(settings.syncFolderName || '');
       setLastSyncTime(settings.lastSyncTime || '');
       setEncryptionEnabled(settings.encryptionEnabled);
+      setCloudSyncEnabled(settings.cloudSyncEnabled || false);
+      setLastCloudSyncTime(settings.lastCloudSyncTime || '');
     }
   };
 
@@ -157,6 +166,58 @@ const Settings: React.FC<SettingsProps> = ({
     if (!isoString) return 'Never';
     const date = new Date(isoString);
     return date.toLocaleString();
+  };
+
+  const handleEnableCloudSync = async () => {
+    setIsEnablingCloudSync(true);
+    try {
+      await syncManager.enableCloudSync();
+      setCloudSyncEnabled(true);
+      setLastCloudSyncTime(new Date().toISOString());
+      if (onSyncStatusChange) {
+        onSyncStatusChange(true);
+      }
+      alert('Cloud sync enabled successfully! Your notes are now synced across devices.');
+    } catch (error) {
+      console.error('Failed to enable cloud sync:', error);
+      alert('Failed to enable cloud sync. Please make sure you are signed in.');
+    } finally {
+      setIsEnablingCloudSync(false);
+    }
+  };
+
+  const handleDisableCloudSync = async () => {
+    if (confirm('Are you sure you want to disable cloud sync? Your notes will no longer sync across devices.')) {
+      try {
+        await syncManager.disableCloudSync();
+        setCloudSyncEnabled(false);
+        setLastCloudSyncTime('');
+        if (onSyncStatusChange) {
+          onSyncStatusChange(false);
+        }
+        alert('Cloud sync disabled successfully!');
+      } catch (error) {
+        console.error('Failed to disable cloud sync:', error);
+        alert('Failed to disable cloud sync. Please try again.');
+      }
+    }
+  };
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncManager.manualCloudSync();
+      const settings = await syncManager.getSyncStatus();
+      if (settings) {
+        setLastCloudSyncTime(settings.lastCloudSyncTime || '');
+      }
+      alert('Sync completed successfully!');
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      alert('Sync failed. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleTestApiKey = async () => {
@@ -302,6 +363,91 @@ const Settings: React.FC<SettingsProps> = ({
                 </>
               )}
             </div>
+          </div>
+
+          {/* Cloud Sync Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+              <FontAwesomeIcon icon={faCloud} className="w-5 h-5" />
+              Cloud Sync (Jottin Cloud)
+            </h3>
+
+            <RequireAuthNotice
+              message="Sign in to enable cloud sync and access your notes across all devices."
+              buttonText="Sign in to enable cloud sync"
+              className="mb-4"
+              variant="minimal"
+            />
+
+            <SignedIn>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                      Enable Cloud Sync
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Sync your notes across all devices with end-to-end encryption (E2E)
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={cloudSyncEnabled}
+                      onChange={
+                        cloudSyncEnabled ? handleDisableCloudSync : handleEnableCloudSync
+                      }
+                      disabled={isEnablingCloudSync}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+
+                {cloudSyncEnabled && (
+                  <>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FontAwesomeIcon
+                          icon={faSync}
+                          className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Last Synced
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {formatSyncTime(lastCloudSyncTime)}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleManualSync}
+                      disabled={isSyncing}
+                      className="w-full px-4 py-2 bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <FontAwesomeIcon
+                        icon={faSync}
+                        className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                      />
+                      {isSyncing ? 'Syncing...' : 'Sync Now'}
+                    </button>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                        About Cloud Sync
+                      </h4>
+                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <li>• Notes are encrypted end-to-end (E2E) before syncing</li>
+                        <li>• Automatic sync every 30 seconds</li>
+                        <li>• Access your notes from any device when signed in</li>
+                        <li>• Powered by Neon PostgreSQL</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+            </SignedIn>
           </div>
 
           {/* Encryption Section */}

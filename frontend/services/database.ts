@@ -4,9 +4,11 @@ import { Note, Collection } from '../types';
 
 export interface SyncSettings {
   id: string;
-  syncEnabled: boolean;
+  syncEnabled: boolean; // Folder sync
   syncFolderName?: string;
   lastSyncTime?: string;
+  cloudSyncEnabled?: boolean; // Cloud sync (Jottin Cloud)
+  lastCloudSyncTime?: string;
   encryptionEnabled: boolean;
   encryptedKey?: string;
   // AI Provider Settings
