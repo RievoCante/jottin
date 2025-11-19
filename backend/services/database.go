@@ -11,10 +11,12 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// Database provides database connection and operations
 type Database struct {
 	DB *sql.DB
 }
 
+// NewDatabase creates a new Database instance and connects to Neon PostgreSQL
 func NewDatabase() (*Database, error) {
 	// Get connection string from environment
 	connStr := os.Getenv("DATABASE_URL")
@@ -44,6 +46,7 @@ func NewDatabase() (*Database, error) {
 	return &Database{DB: db}, nil
 }
 
+// Close the database connection
 func (d *Database) Close() error {
 	return d.DB.Close()
 }
@@ -58,4 +61,3 @@ func (d *Database) EnsureUser(ctx context.Context, userID, email string) error {
 	_, err := d.DB.ExecContext(ctx, query, userID, email)
 	return err
 }
-

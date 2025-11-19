@@ -9,10 +9,9 @@ class EncryptionService {
   private readonly IV_LENGTH = 12; // 96 bits for AES-GCM
   private readonly SALT_LENGTH = 16;
 
-  /**
-   * Derive encryption key from user's passphrase or device key
-   * Uses PBKDF2 with 100,000 iterations
-   */
+  // Derive encryption key from user's passphrase or device key
+  // Uses PBKDF2 with 100,000 iterations
+
   async deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
     // Import passphrase as key material
     const keyMaterial = await crypto.subtle.importKey(
@@ -24,10 +23,11 @@ class EncryptionService {
     );
 
     // Derive key using PBKDF2
+    // Cast salt to BufferSource to satisfy TypeScript
     const key = await crypto.subtle.deriveKey(
       {
         name: this.KEY_DERIVATION_ALGORITHM,
-        salt: salt,
+        salt: salt as BufferSource,
         iterations: 100000,
         hash: 'SHA-256',
       },
@@ -40,11 +40,10 @@ class EncryptionService {
     return key;
   }
 
-  /**
-   * Generate or retrieve encryption key
-   * For now, uses a device-stored key derived from user ID
-   * In production, this should prompt for passphrase or use secure key storage
-   */
+  // Generate or retrieve encryption key
+  // For now, uses a device-stored key derived from user ID
+  // In production, this should prompt for passphrase or use secure key storage
+
   async getOrCreateKey(): Promise<CryptoKey> {
     if (this.keyCache) {
       return this.keyCache;
@@ -90,10 +89,8 @@ class EncryptionService {
     }
   }
 
-  /**
-   * Encrypt text content
-   * Returns base64-encoded encrypted data and IV
-   */
+  // Encrypt text content
+  // Returns base64-encoded encrypted data and IV
   async encrypt(plaintext: string): Promise<{ encrypted: string; iv: string }> {
     const key = await this.getOrCreateKey();
     const iv = crypto.getRandomValues(new Uint8Array(this.IV_LENGTH));
@@ -114,13 +111,13 @@ class EncryptionService {
     };
   }
 
-  /**
-   * Decrypt encrypted content
-   * Expects base64-encoded encrypted data and IV
-   */
+  // Decrypt encrypted content
+  // Expects base64-encoded encrypted data and IV
   async decrypt(encryptedBase64: string, ivBase64: string): Promise<string> {
     const key = await this.getOrCreateKey();
-    const encrypted = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+    const encrypted = Uint8Array.from(atob(encryptedBase64), c =>
+      c.charCodeAt(0)
+    );
     const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
 
     const decrypted = await crypto.subtle.decrypt(
@@ -135,13 +132,10 @@ class EncryptionService {
     return new TextDecoder().decode(decrypted);
   }
 
-  /**
-   * Clear cached key (for logout)
-   */
+  // Clear cached key (for logout)
   clearKey(): void {
     this.keyCache = null;
   }
 }
 
 export const encryptionService = new EncryptionService();
-

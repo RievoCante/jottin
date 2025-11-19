@@ -5,18 +5,18 @@ import "time"
 
 // SyncNote represents a note in sync operations
 type SyncNote struct {
-	ID              string    `json:"id"`
-	UserID          string    `json:"userId"`
-	Title           string    `json:"title"`
-	ContentEncrypted []byte   `json:"contentEncrypted"` // Base64 encoded encrypted content
-	ContentIV       []byte    `json:"contentIV"`       // Base64 encoded IV
-	Domain          *string   `json:"domain,omitempty"`
-	Date            time.Time `json:"date"`
-	IsPinned        bool      `json:"isPinned"`
-	CollectionIDs   []string  `json:"collectionIds,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	DeletedAt       *time.Time `json:"deletedAt,omitempty"`
+	ID               string     `json:"id"`
+	UserID           string     `json:"userId"`
+	Title            string     `json:"title"`
+	ContentEncrypted string     `json:"contentEncrypted"` // Base64 encoded encrypted content (as string)
+	ContentIV        string     `json:"contentIV"`        // Base64 encoded IV (as string)
+	Domain           *string    `json:"domain,omitempty"`
+	Date             time.Time  `json:"date"`
+	IsPinned         bool       `json:"isPinned"`
+	CollectionIDs    []string   `json:"collectionIds,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	DeletedAt        *time.Time `json:"deletedAt,omitempty"`
 }
 
 // SyncCollection represents a collection in sync operations
@@ -43,21 +43,22 @@ type SyncResponse struct {
 	LastSync    time.Time        `json:"lastSync"`
 }
 
-// Database models (for internal use)
+// DBNote represents a note in the database (for internal use)
 type DBNote struct {
-	ID              string
-	UserID          string
-	Title           string
+	ID               string
+	UserID           string
+	Title            string
 	ContentEncrypted []byte
-	ContentIV       []byte
-	Domain          *string
-	Date            time.Time
-	IsPinned        bool
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	DeletedAt       *time.Time
+	ContentIV        []byte
+	Domain           *string
+	Date             time.Time
+	IsPinned         bool
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+	DeletedAt        *time.Time
 }
 
+// DBCollection represents a collection in the database (for internal use)
 type DBCollection struct {
 	ID        string
 	UserID    string
@@ -66,4 +67,3 @@ type DBCollection struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
-

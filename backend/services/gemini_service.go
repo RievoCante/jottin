@@ -13,11 +13,13 @@ import (
 	"google.golang.org/api/option"
 )
 
+// GeminiService provides AI-powered features using Google Gemini
 type GeminiService struct {
 	client *genai.Client
 	ctx    context.Context
 }
 
+// NewGeminiService creates a new GeminiService instance
 func NewGeminiService(apiKey string) (*GeminiService, error) {
 	ctx := context.Background()
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
@@ -31,12 +33,16 @@ func NewGeminiService(apiKey string) (*GeminiService, error) {
 	}, nil
 }
 
+// Close closes the Gemini client connection
 func (s *GeminiService) Close() {
 	if s.client != nil {
-		s.client.Close()
+		if err := s.client.Close(); err != nil {
+			log.Printf("Error closing Gemini client: %v", err)
+		}
 	}
 }
 
+// GetChatResponse generates a chat response based on prompt and context notes
 func (s *GeminiService) GetChatResponse(prompt string, contextNotes []models.Note) (string, error) {
 	var contextParts []string
 	for _, note := range contextNotes {
@@ -66,6 +72,7 @@ QUESTION:
 	return fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]), nil
 }
 
+// FindRelevantNotes finds notes relevant to the current content
 func (s *GeminiService) FindRelevantNotes(currentContent string, allNotes []models.Note) ([]models.Note, error) {
 	if strings.TrimSpace(currentContent) == "" || len(allNotes) == 0 {
 		return []models.Note{}, nil
@@ -90,7 +97,11 @@ func (s *GeminiService) FindRelevantNotes(currentContent string, allNotes []mode
 		})
 	}
 
-	summariesJSON, _ := json.Marshal(summaries)
+	summariesJSON, err := json.Marshal(summaries)
+	if err != nil {
+		log.Printf("Error marshaling summaries: %v", err)
+		return []models.Note{}, fmt.Errorf("failed to marshal summaries: %w", err)
+	}
 
 	prompt := fmt.Sprintf(`
 Current Note Content:
@@ -141,6 +152,7 @@ Example response: {"relevantNoteIds": ["note-3", "note-1", "note-5"]}
 	return relevantNotes, nil
 }
 
+// CleanUpNote cleans up and formats note content using AI
 func (s *GeminiService) CleanUpNote(content string) (string, error) {
 	prompt := fmt.Sprintf(`You are an expert note organizer. Clean up and structure the following note.
 Fix any spelling and grammar mistakes.
@@ -167,4 +179,3 @@ Original Note:
 
 	return fmt.Sprintf("%v", resp.Candidates[0].Content.Parts[0]), nil
 }
-

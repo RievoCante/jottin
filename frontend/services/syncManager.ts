@@ -210,7 +210,15 @@ export class SyncManager {
 
             if (existingNote) {
               // Update existing note
-              await db.notes.update(importedNote.id, importedNote);
+              await db.notes.update(importedNote.id, {
+                title: importedNote.title,
+                content: importedNote.content,
+                domain: importedNote.domain,
+                date: importedNote.date,
+                collectionId: importedNote.collectionId,
+                collectionIds: importedNote.collectionIds,
+                isPinned: importedNote.isPinned,
+              });
               console.log(
                 `Updated note from external change: ${importedNote.id}`
               );
@@ -345,7 +353,9 @@ export class SyncManager {
       // Encrypt notes before sending
       const encryptedNotes = await Promise.all(
         localNotes.map(async note => {
-          const { encrypted, iv } = await encryptionService.encrypt(note.content);
+          const { encrypted, iv } = await encryptionService.encrypt(
+            note.content
+          );
           return {
             id: note.id,
             userId: authService.getUserId()!,
@@ -355,7 +365,9 @@ export class SyncManager {
             domain: note.domain,
             date: new Date(note.date),
             isPinned: note.isPinned || false,
-            collectionIds: note.collectionIds || (note.collectionId ? [note.collectionId] : []),
+            collectionIds:
+              note.collectionIds ||
+              (note.collectionId ? [note.collectionId] : []),
             createdAt: new Date(note.date),
             updatedAt: new Date(note.date),
             deletedAt: undefined,
@@ -411,7 +423,9 @@ export class SyncManager {
           // Check if local note is newer
           const localNote = await db.notes.get(remoteNote.id);
           const remoteUpdated = new Date(remoteNote.updatedAt);
-          const localUpdated = localNote ? new Date(localNote.date) : new Date(0);
+          const localUpdated = localNote
+            ? new Date(localNote.date)
+            : new Date(0);
 
           // Merge: use newer version (simple conflict resolution)
           if (!localNote || remoteUpdated >= localUpdated) {
@@ -420,13 +434,20 @@ export class SyncManager {
               title: remoteNote.title,
               content: decryptedContent,
               domain: remoteNote.domain,
-              date: remoteNote.date.toISOString(),
+              date: new Date(remoteNote.date).toISOString(),
               isPinned: remoteNote.isPinned,
               collectionIds: remoteNote.collectionIds || [],
             };
 
             if (localNote) {
-              await db.notes.update(remoteNote.id, mergedNote);
+              await db.notes.update(remoteNote.id, {
+                title: mergedNote.title,
+                content: mergedNote.content,
+                domain: mergedNote.domain,
+                date: mergedNote.date,
+                collectionIds: mergedNote.collectionIds,
+                isPinned: mergedNote.isPinned,
+              });
             } else {
               await db.notes.add(mergedNote);
             }
@@ -491,7 +512,8 @@ export class SyncManager {
         domain: note.domain,
         date: new Date(note.date),
         isPinned: note.isPinned || false,
-        collectionIds: note.collectionIds || (note.collectionId ? [note.collectionId] : []),
+        collectionIds:
+          note.collectionIds || (note.collectionId ? [note.collectionId] : []),
         createdAt: new Date(note.date),
         updatedAt: new Date(),
         deletedAt: undefined,

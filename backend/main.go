@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 )
@@ -17,6 +18,13 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
 	}
+
+	// Initialize Clerk SDK
+	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
+	if clerkSecretKey == "" {
+		log.Fatal("CLERK_SECRET_KEY environment variable is required")
+	}
+	clerk.SetKey(clerkSecretKey)
 
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
@@ -33,14 +41,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.Close()
 
 	// Initialize Gemini service
 	geminiService, err := services.NewGeminiService(apiKey)
 	if err != nil {
+		// Clean up database before exiting
+		if closeErr := database.Close(); closeErr != nil {
+			log.Printf("Error closing database during cleanup: %v", closeErr)
+		}
 		log.Fatalf("Failed to initialize Gemini service: %v", err)
 	}
-	defer geminiService.Close()
+
+	// Set up cleanup after all initialization succeeds
+	defer func() {
+		if err := database.Close(); err != nil {
+			log.Printf("Error closing database: %v", err)
+		}
+		geminiService.Close() // Close() handles its own error logging
+	}()
 
 	// Initialize handlers
 	aiHandlers := handlers.NewAIHandlers(geminiService)
@@ -48,20 +66,22 @@ func main() {
 
 	// Setup routes
 	mux := http.NewServeMux()
-	
+
 	// AI routes
 	mux.HandleFunc("/api/chat", aiHandlers.HandleChat)
 	mux.HandleFunc("/api/notes/relevant", aiHandlers.HandleRelevantNotes)
 	mux.HandleFunc("/api/notes/cleanup", aiHandlers.HandleCleanup)
 	mux.HandleFunc("/api/validate-key", aiHandlers.HandleValidateKey)
-	
+
 	// Sync routes (protected with auth middleware)
 	mux.HandleFunc("/api/sync/notes", handlers.AuthMiddleware(syncHandlers.HandleSyncNotes))
 	mux.HandleFunc("/api/sync/push", handlers.AuthMiddleware(syncHandlers.HandleSyncPush))
-	
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			log.Printf("Error writing health check response: %v", err)
+		}
 	})
 
 	// Setup CORS
@@ -77,7 +97,12 @@ func main() {
 	// Start server
 	log.Printf("Server starting on port %s...", port)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
+		// Clean up before exiting
+		if closeErr := database.Close(); closeErr != nil {
+			log.Printf("Error closing database during cleanup: %v", closeErr)
+		}
+		geminiService.Close()
+		//nolint:gocritic // Explicit cleanup done before exit
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
-

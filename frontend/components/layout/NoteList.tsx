@@ -211,10 +211,18 @@ const NoteList: React.FC<NoteListProps> = ({
                       .map(id => collectionsMap.get(id))
                       .filter(Boolean);
                     return (
-                      <button
+                      <div
                         key={note.id}
                         onClick={() => onNoteSelect(note.id)}
-                        className="group w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                        className="group w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onNoteSelect(note.id);
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-3 text-left min-w-0">
                           <FontAwesomeIcon
@@ -291,7 +299,7 @@ const NoteList: React.FC<NoteListProps> = ({
                             </div>
                           )}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

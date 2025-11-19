@@ -3,7 +3,7 @@ module backend
 go 1.23.0
 
 require (
-	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/clerk/clerk-sdk-go/v2 v2.5.0
 	github.com/google/generative-ai-go v0.18.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
@@ -19,6 +19,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/longrunning v0.5.7 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect

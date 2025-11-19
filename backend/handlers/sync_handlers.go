@@ -4,19 +4,21 @@ package handlers
 import (
 	"backend/models"
 	"backend/services"
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
-
 )
 
+// SyncHandlers handles cloud sync HTTP endpoints
 type SyncHandlers struct {
 	db *services.Database
 }
 
+// NewSyncHandlers creates a new SyncHandlers instance
 func NewSyncHandlers(db *services.Database) *SyncHandlers {
 	return &SyncHandlers{db: db}
 }
@@ -103,14 +105,16 @@ func (h *SyncHandlers) HandleSyncPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process collections first
-	for _, coll := range req.Collections {
+	for i := range req.Collections {
+		coll := &req.Collections[i]
 		if err := h.upsertCollection(ctx, userID, coll); err != nil {
 			log.Printf("Error upserting collection %s: %v", coll.ID, err)
 		}
 	}
 
 	// Process notes
-	for _, note := range req.Notes {
+	for i := range req.Notes {
+		note := &req.Notes[i]
 		if note.DeletedAt != nil {
 			// Soft delete
 			if err := h.deleteNote(ctx, userID, note.ID); err != nil {
@@ -125,8 +129,16 @@ func (h *SyncHandlers) HandleSyncPush(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch updated notes and collections
-	notes, _ := h.fetchNotes(ctx, userID, nil)
-	collections, _ := h.fetchCollections(ctx, userID, nil)
+	notes, err := h.fetchNotes(ctx, userID, nil)
+	if err != nil {
+		log.Printf("Error fetching notes after sync: %v", err)
+		notes = []models.SyncNote{} // Return empty slice on error
+	}
+	collections, err := h.fetchCollections(ctx, userID, nil)
+	if err != nil {
+		log.Printf("Error fetching collections after sync: %v", err)
+		collections = []models.SyncCollection{} // Return empty slice on error
+	}
 
 	respondWithJSON(w, models.SyncResponse{
 		Notes:       notes,
@@ -164,7 +176,11 @@ func (h *SyncHandlers) fetchNotes(ctx context.Context, userID string, since *tim
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var notes []models.SyncNote
 	for rows.Next() {
@@ -183,8 +199,8 @@ func (h *SyncHandlers) fetchNotes(ctx context.Context, userID string, since *tim
 		}
 
 		// Convert bytes to base64 strings for JSON response
-		note.ContentEncrypted = []byte(base64.StdEncoding.EncodeToString(contentEncryptedBytes))
-		note.ContentIV = []byte(base64.StdEncoding.EncodeToString(contentIVBytes))
+		note.ContentEncrypted = base64.StdEncoding.EncodeToString(contentEncryptedBytes)
+		note.ContentIV = base64.StdEncoding.EncodeToString(contentIVBytes)
 
 		if domain.Valid {
 			note.Domain = &domain.String
@@ -194,7 +210,12 @@ func (h *SyncHandlers) fetchNotes(ctx context.Context, userID string, since *tim
 		}
 
 		// Fetch collection IDs for this note
-		note.CollectionIDs, _ = h.fetchNoteCollections(ctx, note.ID)
+		collectionIDs, err := h.fetchNoteCollections(ctx, note.ID)
+		if err != nil {
+			log.Printf("Error fetching collections for note %s: %v", note.ID, err)
+			collectionIDs = []string{} // Use empty slice on error
+		}
+		note.CollectionIDs = collectionIDs
 
 		notes = append(notes, note)
 	}
@@ -227,7 +248,11 @@ func (h *SyncHandlers) fetchCollections(ctx context.Context, userID string, sinc
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var collections []models.SyncCollection
 	for rows.Next() {
@@ -250,7 +275,11 @@ func (h *SyncHandlers) fetchNoteCollections(ctx context.Context, noteID string) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var collectionIDs []string
 	for rows.Next() {
@@ -262,7 +291,7 @@ func (h *SyncHandlers) fetchNoteCollections(ctx context.Context, noteID string) 
 	return collectionIDs, nil
 }
 
-func (h *SyncHandlers) upsertCollection(ctx context.Context, userID string, coll models.SyncCollection) error {
+func (h *SyncHandlers) upsertCollection(ctx context.Context, userID string, coll *models.SyncCollection) error {
 	query := `
 		INSERT INTO collections (id, user_id, name, icon, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -275,14 +304,14 @@ func (h *SyncHandlers) upsertCollection(ctx context.Context, userID string, coll
 	return err
 }
 
-func (h *SyncHandlers) upsertNote(ctx context.Context, userID string, note models.SyncNote) error {
+func (h *SyncHandlers) upsertNote(ctx context.Context, userID string, note *models.SyncNote) error {
 	// ContentEncrypted and ContentIV are base64 strings from frontend
 	// Decode them to []byte for database storage
-	contentEncrypted, err := base64.StdEncoding.DecodeString(string(note.ContentEncrypted))
+	contentEncrypted, err := base64.StdEncoding.DecodeString(note.ContentEncrypted)
 	if err != nil {
 		return err
 	}
-	contentIV, err := base64.StdEncoding.DecodeString(string(note.ContentIV))
+	contentIV, err := base64.StdEncoding.DecodeString(note.ContentIV)
 	if err != nil {
 		return err
 	}
@@ -330,9 +359,8 @@ func (h *SyncHandlers) upsertNote(ctx context.Context, userID string, note model
 	return nil
 }
 
-func (h *SyncHandlers) deleteNote(ctx context.Context, userID string, noteID string) error {
+func (h *SyncHandlers) deleteNote(ctx context.Context, userID, noteID string) error {
 	query := `UPDATE notes SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2`
 	_, err := h.db.DB.ExecContext(ctx, query, noteID, userID)
 	return err
 }
-
