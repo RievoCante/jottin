@@ -53,7 +53,7 @@ export const useAppData = (): UseAppDataReturn => {
         setNotes(loadedNotes);
         setCollections(loadedCollections);
         setIsSyncEnabled(syncSettings?.syncEnabled || false);
-        
+
         // Initialize cloud sync if enabled
         if (syncSettings?.cloudSyncEnabled) {
           syncManager.initializeCloudSync().catch(err => {

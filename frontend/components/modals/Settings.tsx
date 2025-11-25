@@ -35,7 +35,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
   const [isEnablingSync, setIsEnablingSync] = useState(false);
-  
+
   // Cloud Sync state
   const [cloudSyncEnabled, setCloudSyncEnabled] = useState(false);
   const [lastCloudSyncTime, setLastCloudSyncTime] = useState<string>('');
@@ -177,7 +177,9 @@ const Settings: React.FC<SettingsProps> = ({
       if (onSyncStatusChange) {
         onSyncStatusChange(true);
       }
-      alert('Cloud sync enabled successfully! Your notes are now synced across devices.');
+      alert(
+        'Cloud sync enabled successfully! Your notes are now synced across devices.'
+      );
     } catch (error) {
       console.error('Failed to enable cloud sync:', error);
       alert('Failed to enable cloud sync. Please make sure you are signed in.');
@@ -187,7 +189,11 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleDisableCloudSync = async () => {
-    if (confirm('Are you sure you want to disable cloud sync? Your notes will no longer sync across devices.')) {
+    if (
+      confirm(
+        'Are you sure you want to disable cloud sync? Your notes will no longer sync across devices.'
+      )
+    ) {
       try {
         await syncManager.disableCloudSync();
         setCloudSyncEnabled(false);
@@ -387,7 +393,8 @@ const Settings: React.FC<SettingsProps> = ({
                       Enable Cloud Sync
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Sync your notes across all devices with end-to-end encryption (E2E)
+                      Sync your notes across all devices with end-to-end
+                      encryption (E2E)
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -395,7 +402,9 @@ const Settings: React.FC<SettingsProps> = ({
                       type="checkbox"
                       checked={cloudSyncEnabled}
                       onChange={
-                        cloudSyncEnabled ? handleDisableCloudSync : handleEnableCloudSync
+                        cloudSyncEnabled
+                          ? handleDisableCloudSync
+                          : handleEnableCloudSync
                       }
                       disabled={isEnablingCloudSync}
                       className="sr-only peer"
@@ -438,9 +447,13 @@ const Settings: React.FC<SettingsProps> = ({
                         About Cloud Sync
                       </h4>
                       <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                        <li>• Notes are encrypted end-to-end (E2E) before syncing</li>
+                        <li>
+                          • Notes are encrypted end-to-end (E2E) before syncing
+                        </li>
                         <li>• Automatic sync every 30 seconds</li>
-                        <li>• Access your notes from any device when signed in</li>
+                        <li>
+                          • Access your notes from any device when signed in
+                        </li>
                         <li>• Powered by Neon PostgreSQL</li>
                       </ul>
                     </div>
