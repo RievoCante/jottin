@@ -34,19 +34,10 @@ class JottinDatabase extends Dexie {
   }
 
   async initializeDefaultData() {
-    const noteCount = await this.notes.count();
+    // Initialize Settings only if they don't exist
+    const settings = await this.settings.get('sync-settings');
 
-    if (noteCount === 0) {
-      // Initialize with default collections
-      await this.collections.bulkAdd([
-        { id: 'liberator', name: 'Liberator', icon: '⚡️' },
-        { id: 'money', name: 'Money', icon: '💰' },
-        { id: 'health', name: 'Health', icon: '❤️' },
-        { id: 'workout', name: 'Workout', icon: '💪' },
-        { id: 'solopreneur', name: 'Solopreneur', icon: '🚀' },
-      ]);
-
-      // Initialize default settings
+    if (!settings) {
       await this.settings.add({
         id: 'sync-settings',
         syncEnabled: false,
