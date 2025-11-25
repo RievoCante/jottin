@@ -68,10 +68,17 @@ class EncryptionService {
       this.keyCache = await this.deriveKey(passphrase, salt);
       return this.keyCache;
     } else {
-      // Generate new key
-      const salt = crypto.getRandomValues(new Uint8Array(this.SALT_LENGTH));
-      // For now, use user ID as passphrase (in production, prompt user)
-      const passphrase = `jottin_${userID}_${Date.now()}`;
+      // Generate deterministic key based on User ID
+      // This ensures all devices logged in with the same account generate the SAME key
+
+      // Use SHA-256 of UserID as salt (deterministic)
+      const encoder = new TextEncoder();
+      const data = encoder.encode(userID);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const salt = new Uint8Array(hashBuffer).slice(0, 16); // Use first 16 bytes
+
+      // Deterministic passphrase
+      const passphrase = `jottin_v1_${userID}`;
 
       const key = await this.deriveKey(passphrase, salt);
 
