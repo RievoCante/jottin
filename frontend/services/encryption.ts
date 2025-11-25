@@ -46,6 +46,7 @@ class EncryptionService {
 
   async getOrCreateKey(): Promise<CryptoKey> {
     if (this.keyCache) {
+      console.log('[Encryption] Using cached key');
       return this.keyCache;
     }
 
@@ -53,48 +54,68 @@ class EncryptionService {
     if (!userID) {
       throw new Error('User must be authenticated to use encryption');
     }
+    console.log('[Encryption] Getting key for UserID:', userID);
 
     // Generate a device-specific key from user ID
     // In production, this should be stored securely (e.g., IndexedDB with encryption)
     const storageKey = `encryption_key_${userID}`;
     const storedKeyData = localStorage.getItem(storageKey);
 
+    // Calculate expected deterministic passphrase
+    const expectedPassphrase = `jottin_v1_${userID}`;
+
     if (storedKeyData) {
-      // Import existing key
       const keyData = JSON.parse(storedKeyData);
-      const salt = Uint8Array.from(atob(keyData.salt), c => c.charCodeAt(0));
-      const passphrase = keyData.passphrase; // In production, prompt user for this
+      
+      // Check if the stored key uses the correct deterministic passphrase
+      if (keyData.passphrase === expectedPassphrase) {
+        // Import existing key
+        console.log('[Encryption] Found valid stored key in localStorage');
+        const salt = Uint8Array.from(atob(keyData.salt), c => c.charCodeAt(0));
+        
+        console.log('[Encryption] Stored Salt (base64):', keyData.salt);
+        console.log('[Encryption] Stored Passphrase:', keyData.passphrase);
 
-      this.keyCache = await this.deriveKey(passphrase, salt);
-      return this.keyCache;
-    } else {
-      // Generate deterministic key based on User ID
-      // This ensures all devices logged in with the same account generate the SAME key
-
-      // Use SHA-256 of UserID as salt (deterministic)
-      const encoder = new TextEncoder();
-      const data = encoder.encode(userID);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const salt = new Uint8Array(hashBuffer).slice(0, 16); // Use first 16 bytes
-
-      // Deterministic passphrase
-      const passphrase = `jottin_v1_${userID}`;
-
-      const key = await this.deriveKey(passphrase, salt);
-
-      // Store salt and passphrase hint (in production, encrypt this)
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          salt: btoa(String.fromCharCode(...salt)),
-          passphrase: passphrase, // In production, don't store plaintext
-        })
-      );
-
-      this.keyCache = key;
-      return key;
+        this.keyCache = await this.deriveKey(keyData.passphrase, salt);
+        return this.keyCache;
+      } else {
+        console.warn('[Encryption] Found legacy/mismatched key. Regenerating deterministic key.');
+        console.log('[Encryption] Legacy Passphrase:', keyData.passphrase);
+        console.log('[Encryption] Expected Passphrase:', expectedPassphrase);
+        // Fall through to generation logic
+      }
     }
+
+    // Generate deterministic key based on User ID
+    // This ensures all devices logged in with the same account generate the SAME key
+
+    // Use SHA-256 of UserID as salt (deterministic)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(userID);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const salt = new Uint8Array(hashBuffer).slice(0, 16); // Use first 16 bytes
+
+    // Use the expected deterministic passphrase
+    const passphrase = expectedPassphrase;
+
+    const key = await this.deriveKey(passphrase, salt);
+
+    // Store salt and passphrase hint (in production, encrypt this)
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        salt: btoa(String.fromCharCode(...salt)),
+        passphrase: passphrase, // In production, don't store plaintext
+      })
+    );
+
+    this.keyCache = key;
+    console.log('[Encryption] Generated NEW deterministic key');
+    console.log('[Encryption] New Salt (base64):', btoa(String.fromCharCode(...salt)));
+    console.log('[Encryption] New Passphrase:', passphrase);
+    return key;
   }
+
 
   // Encrypt text content
   // Returns base64-encoded encrypted data and IV
@@ -126,6 +147,12 @@ class EncryptionService {
       c.charCodeAt(0)
     );
     const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
+
+    console.log('[Encryption] Decrypting:', {
+      encryptedLength: encrypted.length,
+      ivLength: iv.length,
+      ivBase64,
+    });
 
     const decrypted = await crypto.subtle.decrypt(
       {

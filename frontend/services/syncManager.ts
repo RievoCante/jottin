@@ -509,6 +509,11 @@ export class SyncManager {
         }
       } catch (error) {
         console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
+        console.log('[Sync] Failed note details:', {
+          id: remoteNote.id,
+          contentEncrypted: remoteNote.contentEncrypted,
+          contentIV: remoteNote.contentIV,
+        });
       }
     }
   }
