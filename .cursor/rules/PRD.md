@@ -2,7 +2,7 @@
 
 ## Overview
 
-Jottin is an AI-powered note-taking application that helps users create, organize, and discover connections between their notes using Google Gemini AI.
+Jottin is an AI-powered note-taking application that helps users create, organize, and discover connections between their notes using Google Gemini AI. It features local-first storage with end-to-end encrypted cloud sync, enabling secure note synchronization across multiple devices.
 
 ## Tech Stack
 
@@ -12,78 +12,83 @@ Jottin is an AI-powered note-taking application that helps users create, organiz
 - Vite 6.2.0
 - Tailwind CSS 3.4.18
 - Font Awesome icons
-- Google Gemini AI SDK
+- IndexedDB (Dexie.js) for local-first storage
+- Web Crypto API for client-side encryption
 
 ### Backend
 
-- Go 1.25.3
-- PostgreSQL (database)
+- Go 1.23+ (Clean Architecture)
+- PostgreSQL (NeonDB)
+- Clerk Authentication
 - Google Gemini AI integration
 
 ### Deployment
 
 - Docker + Docker Compose
-- DigitalOcean VPS
+- DigitalOcean VPS (Ubuntu)
+- Nginx (Reverse Proxy + SSL)
+- Cloudflare DNS / Custom Domain
 
 ## Architecture
 
 ```
-┌─────────────┐         ┌─────────────┐         ┌──────────────┐
-│   Frontend  │ ◄─────► │   Backend   │ ◄─────► │  PostgreSQL  │
-│   (React)   │   HTTP  │    (Go)     │         │              │
-└─────────────┘         └─────────────┘         └──────────────┘
-                              │
-                              ▼
-                        ┌──────────────┐
-                        │  Gemini AI   │
-                        └──────────────┘
+┌──────────────┐          ┌──────────────┐          ┌──────────────┐
+│  Mobile/PC   │ ◄──────► │   Backend    │ ◄──────► │  PostgreSQL  │
+│  (Frontend)  │   HTTPS  │    (Go)      │          │   (NeonDB)   │
+└──────────────┘          └──────┬───────┘          └──────────────┘
+       ▲                         │
+       │ (Local DB)              ▼
+┌──────┴───────┐          ┌──────────────┐
+│   IndexedDB  │          │  Gemini AI   │
+└──────────────┘          └──────────────┘
 ```
 
 ## Core Features
 
 ### 1. Note Management
 
+- **Local-First**: Works offline, syncs when online
 - Create, edit, delete notes
 - Rich text editor with markdown support
 - Pin important notes
 - Organize notes into collections
 - Voice transcription (live)
 
-### 2. AI Features
+### 2. Cloud Sync & Security
+
+- **End-to-End Encryption**: Notes are encrypted on the device before sending to the cloud
+- **Cloud Sync**: Seamless synchronization across devices (PC, Mobile, Tablet)
+- **Deterministic Key Generation**: Encryption keys derived from User ID for consistent access
+- **Authentication**: Secure login via Clerk (Google, Email)
+
+### 3. AI Features
 
 - **Smart Cleanup**: AI-powered note formatting and grammar correction
 - **Related Notes**: Automatic discovery of relevant notes based on content
-- **AI Chat**: Ask questions about your notes
+- **AI Chat**: Ask questions about your notes ("Chat with your notes")
 - **Context Awareness**: AI understands note relationships
 
-### 3. Collections
+### 4. Collections
 
 - Group related notes
-- Color-coded organization
+- Custom icons
 - Filter notes by collection
 
 ## API Endpoints
 
-### Phase 1: AI Features (Current Implementation)
+### Sync & Storage
 
 ```
-POST /api/chat
-POST /api/notes/relevant
-POST /api/notes/cleanup
+GET    /api/sync/notes     # Fetch updated notes
+POST   /api/sync/push      # Push local changes (Encrypted)
 ```
 
-### Phase 2: Full CRUD (Planned)
+### AI Features
 
 ```
-GET    /api/notes
-POST   /api/notes
-PUT    /api/notes/:id
-DELETE /api/notes/:id
-
-GET    /api/collections
-POST   /api/collections
-PUT    /api/collections/:id
-DELETE /api/collections/:id
+POST   /api/chat           # Chat with notes
+POST   /api/notes/relevant # Find related notes
+POST   /api/notes/cleanup  # Format/Clean note
 ```
 
 ## Environment Variables
@@ -91,91 +96,69 @@ DELETE /api/collections/:id
 ### Backend
 
 ```env
-GEMINI_API_KEY=your_api_key_here
-DATABASE_URL=postgresql://user:password@localhost:5432/jottin
+GEMINI_API_KEY=your_gemini_key
+CLERK_SECRET_KEY=your_clerk_secret
+DATABASE_URL=postgresql://user:pass@host/db
 PORT=8080
 ```
 
 ### Frontend
 
 ```env
-VITE_API_URL=http://localhost:8080
+VITE_API_URL=https://your-domain.com
+VITE_CLERK_PUBLISHABLE_KEY=your_clerk_key
 ```
 
-## Setup Instructions
+## Database Schema
 
-### Prerequisites
+### Users Table
 
-- Node.js 18+
-- Go 1.25+
-- PostgreSQL 14+
-- Docker & Docker Compose (optional)
-
-### Local Development
-
-#### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
+```sql
+users (
+  id VARCHAR(255) PRIMARY KEY, -- Clerk User ID
+  email VARCHAR(255),
+  created_at TIMESTAMP
+)
 ```
-
-#### Backend
-
-```bash
-cd backend
-go mod download
-go run main.go
-```
-
-### Docker Deployment
-
-```bash
-docker-compose up --build
-```
-
-## Database Schema (Planned - Phase 2)
 
 ### Notes Table
 
 ```sql
 notes (
-  id UUID PRIMARY KEY,
-  title VARCHAR(255),
-  content TEXT,
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) REFERENCES users(id),
+  title TEXT,
+  content_encrypted TEXT, -- Base64 Encrypted Content
+  content_iv TEXT,        -- Base64 IV
+  domain VARCHAR(255),
+  date TIMESTAMP,
   is_pinned BOOLEAN,
-  collection_id UUID,
   created_at TIMESTAMP,
-  updated_at TIMESTAMP
+  updated_at TIMESTAMP,
+  deleted_at TIMESTAMP
 )
 ```
 
-### Collections Table
+### Note Collections (Many-to-Many)
 
 ```sql
-collections (
-  id UUID PRIMARY KEY,
-  name VARCHAR(100),
-  icon VARCHAR(50),
-  color VARCHAR(20),
-  created_at TIMESTAMP
+note_collections (
+  note_id VARCHAR(255) REFERENCES notes(id),
+  collection_id VARCHAR(255)
 )
 ```
 
 ## Security Considerations
 
-- API key stored securely in backend only (never exposed to frontend)
-- Input validation on all endpoints
-- CORS configuration for production
-- PostgreSQL connection pooling and prepared statements
+- **Zero-Knowledge Architecture**: Backend never sees plaintext note content.
+- **Client-Side Encryption**: AES-GCM 256-bit encryption using Web Crypto API.
+- **Secure Key Derivation**: PBKDF2 with SHA-256 and high iteration count.
+- **Authentication**: All API endpoints protected via Clerk JWT.
+- **HTTPS Enforcement**: Required for Web Crypto API.
 
 ## Future Enhancements
 
-- User authentication & authorization
-- Real-time collaboration
-- Mobile app (React Native)
+- Real-time collaboration (Shared notes)
+- Mobile App (React Native / PWA install)
 - Export notes (PDF, Markdown)
-- Dark mode
-- Note sharing & permissions
-- Full-text search optimization
+- Full-text search on encrypted data (Client-side search)

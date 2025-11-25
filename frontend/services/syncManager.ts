@@ -280,7 +280,7 @@ export class SyncManager {
 
     await db.settings.update('sync-settings', {
       cloudSyncEnabled: true,
-      lastCloudSyncTime: new Date().toISOString(),
+      lastCloudSyncTime: undefined, // Reset to ensure full initial sync
     });
 
     // Start periodic sync
@@ -346,6 +346,41 @@ export class SyncManager {
     this.isCloudSyncing = true;
 
     try {
+      // Get sync settings
+      const settings = await this.getSyncStatus();
+      if (!settings?.cloudSyncEnabled) {
+        return;
+      }
+
+      // Get last sync time
+      const since = settings.lastCloudSyncTime
+        ? new Date(settings.lastCloudSyncTime)
+        : undefined;
+
+      // =================================================================
+      // STEP 1: PULL (Fetch remote changes)
+      // =================================================================
+      
+      let endpoint = '/api/sync/notes';
+      if (since) {
+        endpoint += `?since=${since.toISOString()}`;
+      }
+
+      const pullResponse = await apiClient.get(endpoint);
+      if (!pullResponse.ok) {
+        throw new Error(`Sync pull failed: ${pullResponse.statusText}`);
+      }
+
+      const pullData = await pullResponse.json();
+
+      // Decrypt and merge remote notes from PULL
+      await this.mergeRemoteNotes(pullData.notes);
+      await this.mergeRemoteCollections(pullData.collections);
+
+      // =================================================================
+      // STEP 2: PUSH (Send local changes)
+      // =================================================================
+
       // Get all local notes and collections
       const localNotes = await db.notes.toArray();
       const localCollections = await db.collections.toArray();
@@ -384,12 +419,10 @@ export class SyncManager {
         updatedAt: new Date(),
       }));
 
-      // Get last sync time
-      const since = settings.lastCloudSyncTime
-        ? new Date(settings.lastCloudSyncTime)
-        : undefined;
-
       // Push changes to server
+      // Note: We still send 'since' to the push endpoint, although we've already pulled.
+      // The backend push endpoint currently returns all notes, but we can ignore them
+      // or merge them again as a safeguard.
       const pushResponse = await apiClient.post('/api/sync/push', {
         notes: encryptedNotes,
         collections: syncCollections,
@@ -400,83 +433,16 @@ export class SyncManager {
         throw new Error(`Sync push failed: ${pushResponse.statusText}`);
       }
 
-      const syncResponse = await pushResponse.json();
+      const pushData = await pushResponse.json();
 
-      // Decrypt and merge remote notes
-      for (const remoteNote of syncResponse.notes || []) {
-        try {
-          // Skip if deleted
-          if (remoteNote.deletedAt) {
-            const existing = await db.notes.get(remoteNote.id);
-            if (existing) {
-              await db.notes.delete(remoteNote.id);
-            }
-            continue;
-          }
-
-          // Decrypt content
-          const decryptedContent = await encryptionService.decrypt(
-            remoteNote.contentEncrypted,
-            remoteNote.contentIV
-          );
-
-          // Check if local note is newer
-          const localNote = await db.notes.get(remoteNote.id);
-          const remoteUpdated = new Date(remoteNote.updatedAt);
-          const localUpdated = localNote
-            ? new Date(localNote.date)
-            : new Date(0);
-
-          // Merge: use newer version (simple conflict resolution)
-          if (!localNote || remoteUpdated >= localUpdated) {
-            const mergedNote: Note = {
-              id: remoteNote.id,
-              title: remoteNote.title,
-              content: decryptedContent,
-              domain: remoteNote.domain,
-              date: new Date(remoteNote.date).toISOString(),
-              isPinned: remoteNote.isPinned,
-              collectionIds: remoteNote.collectionIds || [],
-            };
-
-            if (localNote) {
-              await db.notes.update(remoteNote.id, {
-                title: mergedNote.title,
-                content: mergedNote.content,
-                domain: mergedNote.domain,
-                date: mergedNote.date,
-                collectionIds: mergedNote.collectionIds,
-                isPinned: mergedNote.isPinned,
-              });
-            } else {
-              await db.notes.add(mergedNote);
-            }
-          }
-        } catch (error) {
-          console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
-        }
-      }
-
-      // Merge collections
-      for (const remoteColl of syncResponse.collections || []) {
-        const existing = await db.collections.get(remoteColl.id);
-        if (existing) {
-          await db.collections.update(remoteColl.id, {
-            name: remoteColl.name,
-            icon: remoteColl.icon,
-          });
-        } else {
-          await db.collections.add({
-            id: remoteColl.id,
-            name: remoteColl.name,
-            icon: remoteColl.icon,
-          });
-        }
-      }
+      // Merge any changes returned by push (safeguard)
+      await this.mergeRemoteNotes(pushData.notes);
+      await this.mergeRemoteCollections(pushData.collections);
 
       // Update last sync time
-      const lastSync = syncResponse.lastSync
-        ? new Date(syncResponse.lastSync)
+      // Use the server's time from the response to avoid clock skew
+      const lastSync = pushData.lastSync
+        ? new Date(pushData.lastSync)
         : new Date();
       this.lastCloudSyncTime = lastSync.toISOString();
 
@@ -490,6 +456,81 @@ export class SyncManager {
       this.isCloudSyncing = false;
     }
   }
+
+  private async mergeRemoteNotes(remoteNotes: any[]): Promise<void> {
+    for (const remoteNote of remoteNotes || []) {
+      try {
+        // Skip if deleted
+        if (remoteNote.deletedAt) {
+          const existing = await db.notes.get(remoteNote.id);
+          if (existing) {
+            await db.notes.delete(remoteNote.id);
+          }
+          continue;
+        }
+
+        // Decrypt content
+        const decryptedContent = await encryptionService.decrypt(
+          remoteNote.contentEncrypted,
+          remoteNote.contentIV
+        );
+
+        // Check if local note is newer
+        const localNote = await db.notes.get(remoteNote.id);
+        const remoteUpdated = new Date(remoteNote.updatedAt);
+        const localUpdated = localNote
+          ? new Date(localNote.date)
+          : new Date(0);
+
+        // Merge: use newer version (simple conflict resolution)
+        if (!localNote || remoteUpdated >= localUpdated) {
+          const mergedNote: Note = {
+            id: remoteNote.id,
+            title: remoteNote.title,
+            content: decryptedContent,
+            domain: remoteNote.domain,
+            date: new Date(remoteNote.date).toISOString(),
+            isPinned: remoteNote.isPinned,
+            collectionIds: remoteNote.collectionIds || [],
+          };
+
+          if (localNote) {
+            await db.notes.update(remoteNote.id, {
+              title: mergedNote.title,
+              content: mergedNote.content,
+              domain: mergedNote.domain,
+              date: mergedNote.date,
+              collectionIds: mergedNote.collectionIds,
+              isPinned: mergedNote.isPinned,
+            });
+          } else {
+            await db.notes.add(mergedNote);
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
+      }
+    }
+  }
+
+  private async mergeRemoteCollections(remoteCollections: any[]): Promise<void> {
+    for (const remoteColl of remoteCollections || []) {
+      const existing = await db.collections.get(remoteColl.id);
+      if (existing) {
+        await db.collections.update(remoteColl.id, {
+          name: remoteColl.name,
+          icon: remoteColl.icon,
+        });
+      } else {
+        await db.collections.add({
+          id: remoteColl.id,
+          name: remoteColl.name,
+          icon: remoteColl.icon,
+        });
+      }
+    }
+  }
+
 
   /**
    * Sync a single note to cloud (called when note is updated)

@@ -61,7 +61,7 @@ func main() {
 	}()
 
 	// Initialize handlers
-	aiHandlers := handlers.NewAIHandlers(geminiService)
+	aiHandlers := handlers.NewAIHandlers()
 	syncHandlers := handlers.NewSyncHandlers(database)
 
 	// Setup routes

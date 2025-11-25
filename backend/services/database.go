@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -40,6 +41,10 @@ func NewDatabase() (*Database, error) {
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
+		// If ping fails, close the connection before returning to prevent leaks
+		if closeErr := db.Close(); closeErr != nil {
+			log.Printf("Failed to close database connection during failed ping: %v", closeErr)
+		}
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 

@@ -11,15 +11,11 @@ import (
 )
 
 // AIHandlers handles AI-powered HTTP endpoints
-type AIHandlers struct {
-	geminiService *services.GeminiService
-}
+type AIHandlers struct{}
 
 // NewAIHandlers creates a new AIHandlers instance
-func NewAIHandlers(geminiService *services.GeminiService) *AIHandlers {
-	return &AIHandlers{
-		geminiService: geminiService,
-	}
+func NewAIHandlers() *AIHandlers {
+	return &AIHandlers{}
 }
 
 // HandleChat handles POST /api/chat - chat with AI
