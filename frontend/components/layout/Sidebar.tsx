@@ -19,7 +19,7 @@ import {
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../../contexts/ThemeContext';
-import { fileSystemService } from '../../services/fileSystemService';
+import { syncManager } from '../../services/sync/syncManager';
 
 interface SidebarProps {
   collections: Collection[];
@@ -94,9 +94,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const handleExportNotes = async () => {
     setIsExporting(true);
     try {
-      const dirHandle = await fileSystemService.selectFolder();
+      const dirHandle = await syncManager.selectFolder();
       if (dirHandle) {
-        const result = await fileSystemService.exportToFolder(
+        const result = await syncManager.exportToFolder(
           notes,
           collections,
           dirHandle
@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     setIsImporting(true);
     try {
-      const result = await fileSystemService.importFromFiles();
+      const result = await syncManager.importFromFiles();
 
       if (result.notes.length > 0) {
         onImportNotes(result.notes, result.collections);

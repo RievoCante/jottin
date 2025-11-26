@@ -42,6 +42,25 @@ export class SyncManager {
     return this.fileSystemSync.getDirectoryHandle();
   }
 
+  async selectFolder(): Promise<FileSystemDirectoryHandle | null> {
+    return this.fileSystemSync.selectFolder();
+  }
+
+  async exportToFolder(
+    notes: Note[],
+    collections: Collection[],
+    dirHandle: FileSystemDirectoryHandle
+  ): Promise<{ success: number; failed: number }> {
+    return this.fileSystemSync.exportToFolder(notes, collections, dirHandle);
+  }
+
+  async importFromFiles(): Promise<{
+    notes: Note[];
+    collections: Collection[];
+  }> {
+    return this.fileSystemSync.importFromFiles();
+  }
+
   // ========== Cloud Sync Delegates ==========
 
   async getSyncStatus(): Promise<SyncSettings | null> {
