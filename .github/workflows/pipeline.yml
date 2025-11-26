@@ -90,8 +90,9 @@ jobs:
           # Note: Adjust the path if your project is in a different location
           cd ~/jottin || exit 1
           
-          # Pull latest changes
-          git pull origin main
+          # Fetch all branches and reset to match origin/main
+          git fetch --all
+          git reset --hard origin/main
           
           # Rebuild and restart containers
           # Using the prod script defined in package.json
