@@ -81,7 +81,7 @@ const Settings: React.FC<SettingsProps> = ({
   const handleEnableSync = async () => {
     setIsEnablingSync(true);
     try {
-      // @ts-ignore - File System Access API
+      // @ts-expect-error - File System Access API
       const dirHandle = await window.showDirectoryPicker({
         mode: 'readwrite',
       });
@@ -100,7 +100,7 @@ const Settings: React.FC<SettingsProps> = ({
       }
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
-        console.log('User cancelled folder selection');
+        // console.debug('User cancelled folder selection');
       } else {
         console.error('Failed to enable sync:', error);
         const errorMessage = (error as Error).message;

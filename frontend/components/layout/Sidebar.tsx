@@ -16,7 +16,6 @@ import {
   faDownload,
   faMoon,
   faGear,
-  faTrash,
   faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -46,9 +45,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCollectionSelect,
   onCreateNote,
   onImportNotes,
-  onSyncStatusChange,
+  onSyncStatusChange: _onSyncStatusChange,
   onCreateCollection,
-  isSettingsOpen,
+  isSettingsOpen: _isSettingsOpen,
   setIsSettingsOpen,
 }) => {
   const { user } = useUser();
@@ -91,16 +90,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Get last sync time
-  const getLastSyncTime = () => {
-    const now = new Date();
-    return now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
 
   const handleExportNotes = async () => {
     setIsExporting(true);

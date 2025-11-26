@@ -1,11 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import {
-  GoogleGenAI,
-  LiveSession,
-  LiveServerMessage,
-  Modality,
-  Blob,
-} from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Blob } from '@google/genai';
 
 // Helper to encode raw audio data
 function encode(bytes: Uint8Array): string {
@@ -33,7 +27,7 @@ function createBlob(data: Float32Array): Blob {
 const useLiveTranscription = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
+  const sessionPromiseRef = useRef<Promise<unknown> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
@@ -43,7 +37,8 @@ const useLiveTranscription = () => {
     if (!isRecording) return;
     setIsRecording(false);
 
-    sessionPromiseRef.current?.then(session => session.close());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sessionPromiseRef.current?.then((session: any) => session.close());
     sessionPromiseRef.current = null;
 
     scriptProcessorRef.current?.disconnect();
@@ -69,8 +64,8 @@ const useLiveTranscription = () => {
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         callbacks: {
           onopen: () => {
-            console.log('Live session opened.');
             audioContextRef.current = new (window.AudioContext ||
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (window as any).webkitAudioContext)({ sampleRate: 16000 });
             mediaStreamSourceRef.current =
               audioContextRef.current.createMediaStreamSource(stream);
@@ -82,7 +77,8 @@ const useLiveTranscription = () => {
                 const inputData =
                   audioProcessingEvent.inputBuffer.getChannelData(0);
                 const pcmBlob = createBlob(inputData);
-                sessionPromiseRef.current?.then(session => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                sessionPromiseRef.current?.then((session: any) => {
                   session.sendRealtimeInput({ media: pcmBlob });
                 });
               };
@@ -109,7 +105,6 @@ const useLiveTranscription = () => {
             stopRecording();
           },
           onclose: () => {
-            console.log('Live session closed.');
             // Stop mic access
             stream.getTracks().forEach(track => track.stop());
           },

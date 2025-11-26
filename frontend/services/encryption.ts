@@ -46,7 +46,6 @@ class EncryptionService {
 
   async getOrCreateKey(): Promise<CryptoKey> {
     if (this.keyCache) {
-      console.log('[Encryption] Using cached key');
       return this.keyCache;
     }
 
@@ -54,7 +53,6 @@ class EncryptionService {
     if (!userID) {
       throw new Error('User must be authenticated to use encryption');
     }
-    console.log('[Encryption] Getting key for UserID:', userID);
 
     // Generate a device-specific key from user ID
     // In production, this should be stored securely (e.g., IndexedDB with encryption)
@@ -66,23 +64,18 @@ class EncryptionService {
 
     if (storedKeyData) {
       const keyData = JSON.parse(storedKeyData);
-      
+
       // Check if the stored key uses the correct deterministic passphrase
       if (keyData.passphrase === expectedPassphrase) {
         // Import existing key
-        console.log('[Encryption] Found valid stored key in localStorage');
         const salt = Uint8Array.from(atob(keyData.salt), c => c.charCodeAt(0));
-        
-        console.log('[Encryption] Stored Salt (base64):', keyData.salt);
-        console.log('[Encryption] Stored Passphrase:', keyData.passphrase);
 
         this.keyCache = await this.deriveKey(keyData.passphrase, salt);
         return this.keyCache;
       } else {
-        console.warn('[Encryption] Found legacy/mismatched key. Regenerating deterministic key.');
-        console.log('[Encryption] Legacy Passphrase:', keyData.passphrase);
-        console.log('[Encryption] Expected Passphrase:', expectedPassphrase);
-        // Fall through to generation logic
+        console.warn(
+          '[Encryption] Found legacy/mismatched key. Regenerating deterministic key.'
+        );
       }
     }
 
@@ -110,12 +103,8 @@ class EncryptionService {
     );
 
     this.keyCache = key;
-    console.log('[Encryption] Generated NEW deterministic key');
-    console.log('[Encryption] New Salt (base64):', btoa(String.fromCharCode(...salt)));
-    console.log('[Encryption] New Passphrase:', passphrase);
     return key;
   }
-
 
   // Encrypt text content
   // Returns base64-encoded encrypted data and IV
@@ -147,12 +136,6 @@ class EncryptionService {
       c.charCodeAt(0)
     );
     const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
-
-    console.log('[Encryption] Decrypting:', {
-      encryptedLength: encrypted.length,
-      ivLength: iv.length,
-      ivBase64,
-    });
 
     const decrypted = await crypto.subtle.decrypt(
       {

@@ -178,7 +178,7 @@ export class FileSystemSync {
     dirHandle: FileSystemDirectoryHandle,
     collectionId: string | null
   ): Promise<void> {
-    // @ts-ignore - File System Access API types
+    // @ts-expect-error - File System Access API types
     for await (const entry of dirHandle.values()) {
       if (entry.kind === 'file' && entry.name.endsWith('.md')) {
         try {
@@ -208,13 +208,13 @@ export class FileSystemSync {
                 collectionIds: importedNote.collectionIds,
                 isPinned: importedNote.isPinned,
               });
-              console.log(
+              console.warn(
                 `Updated note from external change: ${importedNote.id}`
               );
             } else {
               // New file, add to database
               await db.notes.add(importedNote);
-              console.log(
+              console.warn(
                 `Added new note from external file: ${importedNote.id}`
               );
             }

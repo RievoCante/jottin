@@ -44,7 +44,7 @@ class ApiClient {
    */
   async post(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit
   ): Promise<Response> {
     return this.fetch(endpoint, {
@@ -59,7 +59,7 @@ class ApiClient {
    */
   async put(
     endpoint: string,
-    body?: any,
+    body?: unknown,
     options?: RequestInit
   ): Promise<Response> {
     return this.fetch(endpoint, {
