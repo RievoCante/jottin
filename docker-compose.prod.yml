@@ -1,44 +1,47 @@
-# Docker Compose configuration for Production
 services:
+  # 1. The Guard (Nginx)
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # Mounts the folder where you copied the PEM files
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - jottin-network
+    restart: always
+
+  # 2. Backend (Hidden)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    # ports: - "8080:8080"  <-- DELETED (Secure)
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - DATABASE_URL=${DATABASE_URL}
       - PORT=8080
     restart: always
     networks:
       - jottin-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
+  # 3. Frontend (Hidden)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=${VITE_API_URL}
+        - VITE_API_URL=https://jottin.online/api
         - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
-    ports:
-      - "3000:80"
+    # ports: - "80:80" <-- DELETED (Secure)
     depends_on:
       - backend
     restart: always
     networks:
       - jottin-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   jottin-network:
