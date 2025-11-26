@@ -35,7 +35,7 @@ export class CloudSync {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
       if (!lastSync || lastSync < fiveMinutesAgo) {
-        console.log('[Sync] Performing immediate initial sync');
+        console.warn('[Sync] Performing immediate initial sync');
         this.performCloudSync().catch(err => {
           console.error('Initial cloud sync error:', err);
         });
@@ -220,6 +220,7 @@ export class CloudSync {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async mergeRemoteNotes(remoteNotes: any[]): Promise<void> {
     for (const remoteNote of remoteNotes || []) {
       try {
@@ -270,7 +271,7 @@ export class CloudSync {
         }
       } catch (error) {
         console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
-        console.log('[Sync] Failed note details:', {
+        console.warn('[Sync] Failed note details:', {
           id: remoteNote.id,
           contentEncrypted: remoteNote.contentEncrypted,
           contentIV: remoteNote.contentIV,
@@ -280,9 +281,10 @@ export class CloudSync {
   }
 
   private async mergeRemoteCollections(
-    remoteCollections: any[]
+    remoteCollections: unknown[]
   ): Promise<void> {
-    for (const remoteColl of remoteCollections || []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const remoteColl of (remoteCollections as any[]) || []) {
       const existing = await db.collections.get(remoteColl.id);
       if (existing) {
         await db.collections.update(remoteColl.id, {

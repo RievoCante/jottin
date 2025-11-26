@@ -32,6 +32,7 @@ function escapeYamlValue(value: string): string {
 }
 
 export function markdownToNote(filename: string, markdown: string): Note {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let data: any = {};
   let content = markdown;
 
@@ -39,9 +40,9 @@ export function markdownToNote(filename: string, markdown: string): Note {
     const parsed = matter(markdown);
     data = parsed.data;
     content = parsed.content;
-  } catch (error) {
+  } catch {
     // If parsing fails, treat entire content as markdown without frontmatter
-    console.log(`No frontmatter found in ${filename}, using full content`);
+    console.warn(`No frontmatter found in ${filename}, using full content`);
     content = markdown;
   }
 

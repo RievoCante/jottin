@@ -19,7 +19,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   useEffect(() => {
     // Log authentication status when user logs in
     if (userId && user) {
-      console.log('User authenticated:', user.id);
+      // console.debug('User authenticated:', user.id);
     }
   }, [userId, user]);
 

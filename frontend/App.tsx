@@ -1,4 +1,4 @@
-import { useState} from 'react';
+import { useState } from 'react';
 import {
   Sidebar,
   MainContent,
@@ -126,7 +126,6 @@ const App: React.FC = () => {
             note={uiState.activeNote}
             collections={appData.collections}
             onNoteChange={noteOperations.handleNoteChange}
-            createNewNote={handleCreateNote}
             onCleanUp={noteOperations.handleCleanUpNote}
             onTogglePin={() => appData.togglePinNote(uiState.activeNote!.id)}
             onDelete={() =>

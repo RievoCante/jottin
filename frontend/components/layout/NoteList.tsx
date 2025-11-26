@@ -59,15 +59,6 @@ const groupNotesByDate = (notes: Note[]): GroupedNotes[] => {
   }));
 };
 
-const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    month: 'numeric',
-    day: 'numeric',
-  };
-  return new Date(dateString).toLocaleDateString('en-US', options);
-};
-
 interface NoteListProps {
   notes: Note[];
   onNoteSelect: (noteId: string) => void;

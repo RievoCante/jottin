@@ -19,7 +19,6 @@ interface MainContentProps {
   note: Note;
   collections: Collection[];
   onNoteChange: (noteId: string, updates: Partial<Omit<Note, 'id'>>) => void;
-  createNewNote: (content: string, title?: string) => void;
   onCleanUp: (note: Note) => Promise<string>;
   onTogglePin: () => void;
   onDelete: () => void;
@@ -30,7 +29,6 @@ const MainContent: React.FC<MainContentProps> = ({
   note,
   collections,
   onNoteChange,
-  createNewNote,
   onCleanUp,
   onTogglePin,
   onDelete,

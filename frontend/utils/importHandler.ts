@@ -49,7 +49,7 @@ export function resolveConflict(
       // Replace existing with imported
       return { noteToKeep: conflict.importedNote, noteToAdd: null };
 
-    case 'keep-both':
+    case 'keep-both': {
       // Keep existing and add imported with new ID
       const newNote: Note = {
         ...conflict.importedNote,
@@ -57,6 +57,7 @@ export function resolveConflict(
         title: `${conflict.importedNote.title} (imported)`,
       };
       return { noteToKeep: conflict.existingNote, noteToAdd: newNote };
+    }
 
     default:
       return { noteToKeep: conflict.existingNote, noteToAdd: null };

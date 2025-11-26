@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Note, ChatMessage } from '../../types';
 import llmService from '../../services/llmService';
 import { db } from '../../services/database';

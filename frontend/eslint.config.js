@@ -1,55 +1,37 @@
 import js from '@eslint/js';
+import globals from 'globals';
+import react from 'eslint-plugin-react';
+import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 
-export default [
-  js.configs.recommended,
+export default tseslint.config(
+  { ignores: ['dist', 'node_modules', 'coverage', 'logs'] },
   {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        URL: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-      },
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      react,
     },
     rules: {
-      indent: ['error', 2, { SwitchCase: 1 }],
-      'linebreak-style': ['error', 'unix'],
-      quotes: ['error', 'single'],
-      semi: ['error', 'always'],
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-console': 'off',
-      'prefer-const': 'error',
-      'no-var': 'error',
-      'object-shorthand': 'error',
-      'prefer-arrow-callback': 'error',
+      ...react.configs.recommended.rules,
+      ...react.configs['jsx-runtime'].rules,
+      'react/prop-types': 'off', // TypeScript handles this
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
-  },
-  {
-    files: ['tests/**/*.js'],
-    languageOptions: {
-      globals: {
-        describe: 'readonly',
-        it: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        jest: 'readonly',
+    settings: {
+      react: {
+        version: 'detect',
       },
     },
   },
-  {
-    ignores: ['node_modules/**', 'coverage/**', 'logs/**', 'drizzle/**'],
-  },
-  eslintConfigPrettier,
-];
+  eslintConfigPrettier
+);

@@ -42,7 +42,7 @@ class LLMService {
           if (errorData.error) {
             return `Error: ${errorData.error}`;
           }
-        } catch (e) {
+        } catch {
           // If parsing fails, fall through to generic error
         }
 

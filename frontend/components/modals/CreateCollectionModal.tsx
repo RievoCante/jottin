@@ -8,7 +8,20 @@ interface CreateCollectionModalProps {
   onCreate: (name: string, icon: string) => void;
 }
 
-const ICONS = ['📁', '❤️', '⚡', '💰', '🚀', '💪', '🎓', '✈️', '🏠', '🎵', '🎮', '📚'];
+const ICONS = [
+  '📁',
+  '❤️',
+  '⚡',
+  '💰',
+  '🚀',
+  '💪',
+  '🎓',
+  '✈️',
+  '🏠',
+  '🎵',
+  '🎮',
+  '📚',
+];
 
 const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
   isOpen,
