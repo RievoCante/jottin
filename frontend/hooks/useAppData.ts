@@ -27,8 +27,10 @@ interface UseAppDataReturn {
     importedNotes: Note[],
     importedCollections: Collection[]
   ) => Promise<void>;
+  createCollection: (name: string, icon: string) => Promise<string>;
   setSyncEnabled: (enabled: boolean) => void;
 }
+
 
 export const useAppData = (): UseAppDataReturn => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -188,6 +190,26 @@ export const useAppData = (): UseAppDataReturn => {
     [notes]
   );
 
+  const createCollection = useCallback(
+    async (name: string, icon: string) => {
+      const newCollection: Collection = {
+        id: `collection-${Date.now()}`,
+        name,
+        icon,
+      };
+
+      try {
+        await db.collections.add(newCollection);
+        setCollections(prev => [...prev, newCollection]);
+        return newCollection.id;
+      } catch (error) {
+        console.error('Failed to create collection:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
   const importNotes = useCallback(
     async (importedNotes: Note[], importedCollections: Collection[]) => {
       try {
@@ -227,6 +249,7 @@ export const useAppData = (): UseAppDataReturn => {
     updateNote,
     deleteNote,
     togglePinNote,
+    createCollection,
     importNotes,
     setSyncEnabled,
   };

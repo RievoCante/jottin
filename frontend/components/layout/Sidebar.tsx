@@ -32,6 +32,7 @@ interface SidebarProps {
   onCreateNote: () => void;
   onImportNotes?: (notes: Note[], collections: Collection[]) => void;
   onSyncStatusChange?: (enabled: boolean) => void;
+  onCreateCollection: () => void;
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
 }
@@ -46,6 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onCreateNote,
   onImportNotes,
   onSyncStatusChange,
+  onCreateCollection,
   isSettingsOpen,
   setIsSettingsOpen,
 }) => {
@@ -175,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   ?.toUpperCase()}
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-gray-50 dark:text-gray-100 truncate">
+                <p className="text-sm font-semibold text-gray-600 dark:text-gray-100 truncate">
                   {user?.fullName || 'User'}
                 </p>
                 <p className="text-xs text-gray-400 truncate">
@@ -262,7 +264,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               G
             </div>
             <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-200">Guest</p>
+              <p className="text-sm font-semibold text-gray-600">Guest</p>
               <p className="text-xs text-gray-500 mb-2">
                 Sign in to unlock AI features
               </p>
@@ -342,16 +344,28 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div>
-          <button
-            onClick={() => setIsCollectionsVisible(!isCollectionsVisible)}
-            className="w-full text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md hover:bg-gray-200 dark:hover:bg-gray-800"
-          >
-            <FontAwesomeIcon
-              icon={faChevronDown}
-              className={`w-4 h-4 transition-transform ${!isCollectionsVisible ? '-rotate-90' : ''}`}
-            />
-            <span>Collections</span>
-          </button>
+          <div className="flex items-center justify-between group">
+            <button
+              onClick={() => setIsCollectionsVisible(!isCollectionsVisible)}
+              className="flex-1 text-left flex items-center gap-2 p-2 text-gray-600 dark:text-gray-400 font-semibold rounded-md hover:bg-gray-200 dark:hover:bg-gray-800"
+            >
+              <FontAwesomeIcon
+                icon={faChevronDown}
+                className={`w-4 h-4 transition-transform ${!isCollectionsVisible ? '-rotate-90' : ''}`}
+              />
+              <span>Collections</span>
+            </button>
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onCreateCollection();
+              }}
+              className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition-all"
+              title="Create Collection"
+            >
+              <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
+            </button>
+          </div>
           {isCollectionsVisible && (
             <ul>
               {collectionsToShow.map(collection => (

@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState} from 'react';
 import {
   Sidebar,
   MainContent,
@@ -7,7 +7,11 @@ import {
   MobileHeader,
   FloatingActionButton,
 } from './components/layout';
-import { SearchModal, Settings } from './components/modals';
+import {
+  SearchModal,
+  Settings,
+  CreateCollectionModal,
+} from './components/modals';
 import { SyncStatus, LoadingSpinner } from './components/ui';
 import { useAppData } from './hooks/useAppData';
 import { useUIState } from './hooks/useUIState';
@@ -22,6 +26,8 @@ const App: React.FC = () => {
 
   // UI state management
   const uiState = useUIState(appData.notes, appData.collections);
+  const [isCreateCollectionModalOpen, setIsCreateCollectionModalOpen] =
+    useState(false);
 
   // HeadsUp panel state
   const headsUp = useHeadsUp();
@@ -92,6 +98,7 @@ const App: React.FC = () => {
           }}
           onImportNotes={appData.importNotes}
           onSyncStatusChange={appData.setSyncEnabled}
+          onCreateCollection={() => setIsCreateCollectionModalOpen(true)}
           isSettingsOpen={uiState.isSettingsOpen}
           setIsSettingsOpen={uiState.setIsSettingsOpen}
         />
@@ -180,6 +187,12 @@ const App: React.FC = () => {
         onClose={() => uiState.setIsSettingsOpen(false)}
         collections={appData.collections}
         onSyncStatusChange={appData.setSyncEnabled}
+      />
+
+      <CreateCollectionModal
+        isOpen={isCreateCollectionModalOpen}
+        onClose={() => setIsCreateCollectionModalOpen(false)}
+        onCreate={appData.createCollection}
       />
     </div>
   );
