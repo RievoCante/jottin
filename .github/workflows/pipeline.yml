@@ -72,27 +72,27 @@ jobs:
       run: make build
 
   # CD Job
-  cd:
-    name: CD (Deploy to Production)
-    needs: [frontend-ci, backend-ci]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+  # cd:
+  #   name: CD (Deploy to Production)
+  #   needs: [frontend-ci, backend-ci]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - name: Deploy to DigitalOcean Droplet
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.DROPLET_IP }}
-        username: ${{ secrets.DROPLET_USERNAME }}
-        key: ${{ secrets.DROPLET_SSH_KEY }}
-        script: |
-          # Navigate to project directory
-          # Note: Adjust the path if your project is in a different location
-          cd ~/jottin || exit 1
+  #   steps:
+  #   - name: Deploy to DigitalOcean Droplet
+  #     uses: appleboy/ssh-action@v1.0.3
+  #     with:
+  #       host: ${{ secrets.DROPLET_IP }}
+  #       username: ${{ secrets.DROPLET_USERNAME }}
+  #       key: ${{ secrets.DROPLET_SSH_KEY }}
+  #       script: |
+  #         # Navigate to project directory
+  #         # Note: Adjust the path if your project is in a different location
+  #         cd ~/jottin || exit 1
           
-          # Pull latest changes
-          git pull origin main
+  #         # Pull latest changes
+  #         git pull origin main
           
-          # Rebuild and restart containers
-          # Using the prod script defined in package.json
-          npm run prod:build
+  #         # Rebuild and restart containers
+  #         # Using the prod script defined in package.json
+  #         npm run prod:build

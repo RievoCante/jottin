@@ -236,4 +236,107 @@ export class FileSystemSync {
   getDirectoryHandle(): FileSystemDirectoryHandle | null {
     return this.dirHandle;
   }
+
+  async selectFolder(): Promise<FileSystemDirectoryHandle | null> {
+    try {
+      // @ts-expect-error - File System Access API
+      return await window.showDirectoryPicker({
+        mode: 'readwrite',
+      });
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async exportToFolder(
+    notes: Note[],
+    collections: Collection[],
+    dirHandle: FileSystemDirectoryHandle
+  ): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+
+    // Create collection directories
+    const collectionDirs = new Map<string, FileSystemDirectoryHandle>();
+    for (const collection of collections) {
+      try {
+        const colDir = await dirHandle.getDirectoryHandle(collection.name, {
+          create: true,
+        });
+        collectionDirs.set(collection.id, colDir);
+      } catch (e) {
+        console.error(`Failed to create directory for ${collection.name}`, e);
+      }
+    }
+
+    // Write notes
+    for (const note of notes) {
+      try {
+        const filename = getFilenameForNote(note);
+        let targetDir = dirHandle;
+
+        if (note.collectionId && collectionDirs.has(note.collectionId)) {
+          targetDir = collectionDirs.get(note.collectionId)!;
+        } else if (note.collectionIds && note.collectionIds.length > 0) {
+          const firstColId = note.collectionIds[0];
+          if (collectionDirs.has(firstColId)) {
+            targetDir = collectionDirs.get(firstColId)!;
+          }
+        }
+
+        const fileHandle = await targetDir.getFileHandle(filename, {
+          create: true,
+        });
+        const writable = await fileHandle.createWritable();
+        await writable.write(noteToMarkdown(note));
+        await writable.close();
+        success++;
+      } catch (e) {
+        console.error(`Failed to export note ${note.title}`, e);
+        failed++;
+      }
+    }
+
+    return { success, failed };
+  }
+
+  async importFromFiles(): Promise<{
+    notes: Note[];
+    collections: Collection[];
+  }> {
+    try {
+      // @ts-expect-error - File System Access API
+      const fileHandles = await window.showOpenFilePicker({
+        multiple: true,
+        types: [
+          {
+            description: 'Markdown Files',
+            accept: {
+              'text/markdown': ['.md', '.markdown'],
+            },
+          },
+        ],
+      });
+
+      const notes: Note[] = [];
+      const collections: Collection[] = [];
+
+      for (const handle of fileHandles) {
+        const file = await handle.getFile();
+        const content = await file.text();
+        const note = markdownToNote(file.name, content);
+        notes.push(note);
+      }
+
+      return { notes, collections };
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        return { notes: [], collections: [] };
+      }
+      throw error;
+    }
+  }
 }
