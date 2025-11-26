@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  # Frontend CI Job
+  frontend-ci:
+    name: Frontend CI (Lint & Format)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install Dependencies
+      working-directory: ./frontend
+      run: npm ci
+
+    - name: Lint Check
+      working-directory: ./frontend
+      run: npm run lint:check
+
+    - name: Format Check
+      working-directory: ./frontend
+      run: npm run format:check
+
+  # Backend CI Job
+  backend-ci:
+    name: Backend CI (Go)
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache: true
+        cache-dependency-path: backend/go.sum
+
+    - name: Install Dependencies
+      working-directory: ./backend
+      run: make deps
+
+    - name: Lint & Format Check
+      working-directory: ./backend
+      run: make check
+
+    - name: Run Tests
+      working-directory: ./backend
+      run: make test
+
+    - name: Build Binary
+      working-directory: ./backend
+      run: make build
+
+  # CD Job
+  cd:
+    name: CD (Deploy to Production)
+    needs: [frontend-ci, backend-ci]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to DigitalOcean Droplet
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DROPLET_IP }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        script: |
+          # Navigate to project directory
+          # Note: Adjust the path if your project is in a different location
+          cd ~/jottin || exit 1
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Rebuild and restart containers
+          # Using the prod script defined in package.json
+          npm run prod:build
