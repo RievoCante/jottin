@@ -10,3 +10,4 @@ Todo:
   ☐ keep user API key secure and private.
   ☐ sync note to user cloud ex. google drive, dropbox, etc.
   ☐ Master password for real E2EE
+  ☐ use embedding instead of sending all the notes to llm which consume to much token

@@ -1,6 +1,5 @@
 // Custom hook for file sync state management
 import { useState, useEffect } from 'react';
-import { syncManager } from '../services/syncManager';
 import { db } from '../services/database';
 
 export function useFileSync() {

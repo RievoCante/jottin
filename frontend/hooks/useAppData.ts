@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Note, Collection } from '../types';
 import { db } from '../services/database';
-import { syncManager } from '../services/syncManager';
+import { syncManager } from '../services/sync/syncManager';
 
 interface UseAppDataReturn {
   // State
@@ -201,6 +201,10 @@ export const useAppData = (): UseAppDataReturn => {
       try {
         await db.collections.add(newCollection);
         setCollections(prev => [...prev, newCollection]);
+        
+        // Sync to cloud
+        await syncManager.syncCollectionToCloud(newCollection);
+        
         return newCollection.id;
       } catch (error) {
         console.error('Failed to create collection:', error);

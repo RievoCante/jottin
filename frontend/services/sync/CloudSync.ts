@@ -1,244 +1,14 @@
-// Real-time filesystem sync manager and cloud sync manager
-import { Note, Collection } from '../types';
-import { db, SyncSettings } from './database';
-import {
-  noteToMarkdown,
-  markdownToNote,
-  getFilenameForNote,
-} from '../utils/markdownConverter';
-import { apiClient } from './apiClient';
-import { encryptionService } from './encryption';
-import { authService } from './authService';
+import { Note, Collection } from '../../types';
+import { db, SyncSettings } from '../database';
+import { apiClient } from '../apiClient';
+import { encryptionService } from '../encryption';
+import { authService } from '../authService';
 
-export class SyncManager {
-  // Folder sync properties
-  private syncInterval: number | null = null;
-  private pendingWrites: Map<string, NodeJS.Timeout> = new Map();
-  private readonly DEBOUNCE_DELAY = 300; // ms
-  private readonly POLL_INTERVAL = 5000; // ms
-  private dirHandle: FileSystemDirectoryHandle | null = null;
-  private collectionDirs: Map<string, FileSystemDirectoryHandle> = new Map();
-  private lastModifiedTimes: Map<string, number> = new Map();
-
-  // Cloud sync properties
+export class CloudSync {
   private cloudSyncInterval: number | null = null;
   private readonly CLOUD_SYNC_INTERVAL = 30000; // 30 seconds
   private isCloudSyncing: boolean = false;
   private lastCloudSyncTime: string | null = null;
-
-  async enableFolderSync(
-    dirHandle: FileSystemDirectoryHandle,
-    collections: Collection[]
-  ): Promise<void> {
-    this.dirHandle = dirHandle;
-
-    // Store directory handle (note: can't persist FileSystemHandle to IndexedDB)
-    await db.settings.put({
-      id: 'sync-settings',
-      syncEnabled: true,
-      syncFolderName: dirHandle.name,
-      lastSyncTime: new Date().toISOString(),
-      encryptionEnabled: false,
-    });
-
-    // Create collection directories
-    for (const collection of collections) {
-      try {
-        const collectionDir = await dirHandle.getDirectoryHandle(
-          collection.name,
-          { create: true }
-        );
-        this.collectionDirs.set(collection.id, collectionDir);
-      } catch (error) {
-        console.error(
-          `Failed to create directory for collection ${collection.name}:`,
-          error
-        );
-      }
-    }
-
-    // Start watching for external changes
-    this.startWatchingForChanges();
-  }
-
-  async disableFolderSync(): Promise<void> {
-    this.stopWatchingForChanges();
-    this.dirHandle = null;
-    this.collectionDirs.clear();
-    this.lastModifiedTimes.clear();
-
-    await db.settings.update('sync-settings', {
-      syncEnabled: false,
-      syncFolderName: undefined,
-    });
-  }
-
-  async syncNoteToFile(note: Note): Promise<void> {
-    if (!this.dirHandle) {
-      console.warn('Sync not enabled, skipping file write');
-      return;
-    }
-
-    // Clear any pending write for this note
-    const existingTimeout = this.pendingWrites.get(note.id);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Debounce the write
-    const timeout = setTimeout(async () => {
-      try {
-        await this.writeNoteToFile(note);
-        this.pendingWrites.delete(note.id);
-
-        // Update last sync time
-        await db.settings.update('sync-settings', {
-          lastSyncTime: new Date().toISOString(),
-        });
-      } catch (error) {
-        console.error(`Failed to sync note ${note.id} to file:`, error);
-      }
-    }, this.DEBOUNCE_DELAY);
-
-    this.pendingWrites.set(note.id, timeout);
-  }
-
-  private async writeNoteToFile(note: Note): Promise<void> {
-    if (!this.dirHandle) return;
-
-    const markdown = noteToMarkdown(note);
-    const filename = getFilenameForNote(note);
-
-    // Determine target directory
-    let targetDir = this.dirHandle;
-    if (note.collectionId && this.collectionDirs.has(note.collectionId)) {
-      targetDir = this.collectionDirs.get(note.collectionId)!;
-    }
-
-    // Write file
-    const fileHandle = await targetDir.getFileHandle(filename, {
-      create: true,
-    });
-    const writable = await fileHandle.createWritable();
-    await writable.write(markdown);
-    await writable.close();
-
-    // Update last modified time
-    const file = await fileHandle.getFile();
-    this.lastModifiedTimes.set(note.id, file.lastModified);
-  }
-
-  async syncDeleteToFile(noteId: string, note: Note): Promise<void> {
-    if (!this.dirHandle) return;
-
-    try {
-      const filename = getFilenameForNote(note);
-
-      // Determine target directory
-      let targetDir = this.dirHandle;
-      if (note.collectionId && this.collectionDirs.has(note.collectionId)) {
-        targetDir = this.collectionDirs.get(note.collectionId)!;
-      }
-
-      // Delete file
-      await targetDir.removeEntry(filename);
-      this.lastModifiedTimes.delete(noteId);
-
-      await db.settings.update('sync-settings', {
-        lastSyncTime: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.error(`Failed to delete file for note ${noteId}:`, error);
-    }
-  }
-
-  private startWatchingForChanges(): void {
-    if (this.syncInterval !== null) {
-      return; // Already watching
-    }
-
-    this.syncInterval = window.setInterval(() => {
-      this.checkForExternalChanges();
-    }, this.POLL_INTERVAL);
-  }
-
-  private stopWatchingForChanges(): void {
-    if (this.syncInterval !== null) {
-      clearInterval(this.syncInterval);
-      this.syncInterval = null;
-    }
-  }
-
-  private async checkForExternalChanges(): Promise<void> {
-    if (!this.dirHandle) return;
-
-    try {
-      // Scan all markdown files
-      await this.scanForChanges(this.dirHandle, null);
-
-      // Scan collection directories
-      for (const [collectionId, dirHandle] of this.collectionDirs.entries()) {
-        await this.scanForChanges(dirHandle, collectionId);
-      }
-    } catch (error) {
-      console.error('Error checking for external changes:', error);
-    }
-  }
-
-  private async scanForChanges(
-    dirHandle: FileSystemDirectoryHandle,
-    collectionId: string | null
-  ): Promise<void> {
-    // @ts-ignore - File System Access API types
-    for await (const entry of dirHandle.values()) {
-      if (entry.kind === 'file' && entry.name.endsWith('.md')) {
-        try {
-          const file = await entry.getFile();
-          const content = await file.text();
-          const importedNote = markdownToNote(entry.name, content);
-
-          // Override collection if in collection folder
-          if (collectionId) {
-            importedNote.collectionId = collectionId;
-          }
-
-          // Check if file was modified externally
-          const lastModified = this.lastModifiedTimes.get(importedNote.id);
-          if (!lastModified || file.lastModified > lastModified) {
-            // File was modified externally, update database
-            const existingNote = await db.notes.get(importedNote.id);
-
-            if (existingNote) {
-              // Update existing note
-              await db.notes.update(importedNote.id, {
-                title: importedNote.title,
-                content: importedNote.content,
-                domain: importedNote.domain,
-                date: importedNote.date,
-                collectionId: importedNote.collectionId,
-                collectionIds: importedNote.collectionIds,
-                isPinned: importedNote.isPinned,
-              });
-              console.log(
-                `Updated note from external change: ${importedNote.id}`
-              );
-            } else {
-              // New file, add to database
-              await db.notes.add(importedNote);
-              console.log(
-                `Added new note from external file: ${importedNote.id}`
-              );
-            }
-
-            // Update last modified time
-            this.lastModifiedTimes.set(importedNote.id, file.lastModified);
-          }
-        } catch (error) {
-          console.error(`Failed to process file ${entry.name}:`, error);
-        }
-      }
-    }
-  }
 
   async getSyncStatus(): Promise<SyncSettings | null> {
     try {
@@ -249,16 +19,6 @@ export class SyncManager {
     }
   }
 
-  isSyncEnabled(): boolean {
-    return this.dirHandle !== null;
-  }
-
-  getDirectoryHandle(): FileSystemDirectoryHandle | null {
-    return this.dirHandle;
-  }
-
-  // ========== Cloud Sync Methods ==========
-
   /**
    * Initialize cloud sync if already enabled (called on app load)
    */
@@ -266,7 +26,20 @@ export class SyncManager {
     const settings = await this.getSyncStatus();
     if (settings?.cloudSyncEnabled && authService.isAuthenticated()) {
       this.startCloudSync();
-      // Don't perform sync immediately on init, let it happen naturally
+
+      // Perform immediate sync if it's been a while or never synced
+      // This ensures fresh data on startup
+      const lastSync = settings.lastCloudSyncTime
+        ? new Date(settings.lastCloudSyncTime)
+        : null;
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+      if (!lastSync || lastSync < fiveMinutesAgo) {
+        console.log('[Sync] Performing immediate initial sync');
+        this.performCloudSync().catch(err => {
+          console.error('Initial cloud sync error:', err);
+        });
+      }
     }
   }
 
@@ -346,12 +119,6 @@ export class SyncManager {
     this.isCloudSyncing = true;
 
     try {
-      // Get sync settings
-      const settings = await this.getSyncStatus();
-      if (!settings?.cloudSyncEnabled) {
-        return;
-      }
-
       // Get last sync time
       const since = settings.lastCloudSyncTime
         ? new Date(settings.lastCloudSyncTime)
@@ -360,7 +127,7 @@ export class SyncManager {
       // =================================================================
       // STEP 1: PULL (Fetch remote changes)
       // =================================================================
-      
+
       let endpoint = '/api/sync/notes';
       if (since) {
         endpoint += `?since=${since.toISOString()}`;
@@ -420,9 +187,6 @@ export class SyncManager {
       }));
 
       // Push changes to server
-      // Note: We still send 'since' to the push endpoint, although we've already pulled.
-      // The backend push endpoint currently returns all notes, but we can ignore them
-      // or merge them again as a safeguard.
       const pushResponse = await apiClient.post('/api/sync/push', {
         notes: encryptedNotes,
         collections: syncCollections,
@@ -440,7 +204,6 @@ export class SyncManager {
       await this.mergeRemoteCollections(pushData.collections);
 
       // Update last sync time
-      // Use the server's time from the response to avoid clock skew
       const lastSync = pushData.lastSync
         ? new Date(pushData.lastSync)
         : new Date();
@@ -478,9 +241,7 @@ export class SyncManager {
         // Check if local note is newer
         const localNote = await db.notes.get(remoteNote.id);
         const remoteUpdated = new Date(remoteNote.updatedAt);
-        const localUpdated = localNote
-          ? new Date(localNote.date)
-          : new Date(0);
+        const localUpdated = localNote ? new Date(localNote.date) : new Date(0);
 
         // Merge: use newer version (simple conflict resolution)
         if (!localNote || remoteUpdated >= localUpdated) {
@@ -518,7 +279,9 @@ export class SyncManager {
     }
   }
 
-  private async mergeRemoteCollections(remoteCollections: any[]): Promise<void> {
+  private async mergeRemoteCollections(
+    remoteCollections: any[]
+  ): Promise<void> {
     for (const remoteColl of remoteCollections || []) {
       const existing = await db.collections.get(remoteColl.id);
       if (existing) {
@@ -535,7 +298,6 @@ export class SyncManager {
       }
     }
   }
-
 
   /**
    * Sync a single note to cloud (called when note is updated)
@@ -585,16 +347,22 @@ export class SyncManager {
 
     try {
       const note = await db.notes.get(noteId);
-      if (!note) return;
+      // Note might be already deleted from DB, so we construct a minimal sync object
+      // or rely on what we have. If we don't have the note, we can't sync the deletion
+      // properly unless we track deleted IDs separately.
+      // For now, if note is missing, we can try to sync just the ID if the backend supports it,
+      // but the current backend expects a full struct.
+      // If the note is already gone from IndexedDB, we can't get its title/etc.
+      // However, for deletion, the backend mainly needs ID and DeletedAt.
 
       const syncNote = {
         id: noteId,
         userId: authService.getUserId()!,
-        title: note.title,
+        title: note?.title || 'Deleted Note', // Fallback
         contentEncrypted: '',
         contentIV: '',
-        domain: note.domain,
-        date: new Date(note.date),
+        domain: note?.domain,
+        date: new Date(),
         isPinned: false,
         collectionIds: [],
         createdAt: new Date(),
@@ -612,11 +380,40 @@ export class SyncManager {
   }
 
   /**
+   * Sync a single collection to cloud (called when collection is created/updated)
+   */
+  async syncCollectionToCloud(collection: Collection): Promise<void> {
+    const settings = await this.getSyncStatus();
+    if (!settings?.cloudSyncEnabled || !authService.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const syncCollection = {
+        id: collection.id,
+        userId: authService.getUserId()!,
+        name: collection.name,
+        icon: collection.icon,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await apiClient.post('/api/sync/push', {
+        notes: [],
+        collections: [syncCollection],
+      });
+    } catch (error) {
+      console.error(
+        `Failed to sync collection ${collection.id} to cloud:`,
+        error
+      );
+    }
+  }
+
+  /**
    * Manual sync trigger (for "Sync Now" button)
    */
   async manualCloudSync(): Promise<void> {
     await this.performCloudSync();
   }
 }
-
-export const syncManager = new SyncManager();

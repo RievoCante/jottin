@@ -8,7 +8,7 @@ import {
   faLock,
   faCloud,
 } from '@fortawesome/free-solid-svg-icons';
-import { syncManager } from '../../services/syncManager';
+import { syncManager } from '../../services/sync/syncManager';
 import { Collection } from '../../types';
 import { db } from '../../services/database';
 import { SignedIn } from '@clerk/clerk-react';
