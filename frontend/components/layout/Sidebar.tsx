@@ -1,11 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  useUser,
-  useAuth,
-} from '@clerk/clerk-react';
+import { SignInButton, useUser, useAuth } from '@clerk/clerk-react';
 import { Note, Collection } from '../../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -17,6 +11,7 @@ import {
   faMoon,
   faGear,
   faRightFromBracket,
+  faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { syncManager } from '../../services/sync/syncManager';
@@ -51,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsSettingsOpen,
 }) => {
   const { user } = useUser();
-  const { signOut } = useAuth();
+  const { signOut, isLoaded } = useAuth();
   const [isNotesVisible, setIsNotesVisible] = useState(true);
   const [isCollectionsVisible, setIsCollectionsVisible] = useState(true);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -150,27 +145,47 @@ const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-80 lg:w-72 h-screen bg-gray-50 dark:bg-[#111111] border-r border-gray-200 dark:border-gray-800 flex flex-col p-3 text-sm overflow-y-auto">
       {/* User Profile */}
       <div className="mb-4">
-        <SignedIn>
+        {!isLoaded ? (
+          <div className="w-full p-3 rounded-xl border border-transparent flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 animate-pulse" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-32 animate-pulse" />
+            </div>
+          </div>
+        ) : (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsProfileMenuOpen(prev => !prev)}
               className="w-full p-3 rounded-xl border border-transparent hover:border-indigo-500/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 flex items-center gap-3 transition-colors"
             >
-              <div className="w-12 h-12 rounded-full bg-indigo-200 dark:bg-indigo-700 flex items-center justify-center text-indigo-900 dark:text-white text-lg font-semibold">
-                {(
-                  user?.fullName ||
-                  user?.primaryEmailAddress?.emailAddress ||
-                  '?'
-                )
-                  ?.charAt(0)
-                  ?.toUpperCase()}
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
+                  user
+                    ? 'bg-indigo-200 dark:bg-indigo-700 text-indigo-900 dark:text-white'
+                    : 'bg-gray-700 text-white'
+                }`}
+              >
+                {user ? (
+                  (
+                    user.fullName ||
+                    user.primaryEmailAddress?.emailAddress ||
+                    '?'
+                  )
+                    .charAt(0)
+                    .toUpperCase()
+                ) : (
+                  <FontAwesomeIcon icon={faUser} />
+                )}
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-semibold text-gray-600 dark:text-gray-100 truncate">
-                  {user?.fullName || 'User'}
+                  {user ? user.fullName || 'User' : 'Guest'}
                 </p>
                 <p className="text-xs text-gray-400 truncate">
-                  {user?.primaryEmailAddress?.emailAddress}
+                  {user
+                    ? user.primaryEmailAddress?.emailAddress
+                    : 'Sign in to unlock AI'}
                 </p>
               </div>
             </button>
@@ -217,54 +232,49 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setIsSettingsOpen(true);
-                      setIsProfileMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
-                  >
-                    <FontAwesomeIcon icon={faGear} className="w-4 h-4" />
-                    <span>Settings</span>
-                  </button>
+                  {user && (
+                    <button
+                      onClick={() => {
+                        setIsSettingsOpen(true);
+                        setIsProfileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors"
+                    >
+                      <FontAwesomeIcon icon={faGear} className="w-4 h-4" />
+                      <span>Settings</span>
+                    </button>
+                  )}
 
-                  <button
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600 dark:text-red-400 transition-colors"
-                    onClick={() => {
-                      signOut();
-                      setIsProfileMenuOpen(false);
-                    }}
-                  >
-                    <FontAwesomeIcon
-                      icon={faRightFromBracket}
-                      className="w-4 h-4"
-                    />
-                    <span>Sign out</span>
-                  </button>
+                  {user ? (
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-red-600 dark:text-red-400 transition-colors"
+                      onClick={() => {
+                        signOut();
+                        setIsProfileMenuOpen(false);
+                      }}
+                    >
+                      <FontAwesomeIcon
+                        icon={faRightFromBracket}
+                        className="w-4 h-4"
+                      />
+                      <span>Sign out</span>
+                    </button>
+                  ) : (
+                    <SignInButton mode="modal">
+                      <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-indigo-600 dark:text-indigo-400 transition-colors">
+                        <FontAwesomeIcon
+                          icon={faRightFromBracket}
+                          className="w-4 h-4 rotate-180"
+                        />
+                        <span>Sign in</span>
+                      </button>
+                    </SignInButton>
+                  )}
                 </div>
               </div>
             )}
           </div>
-        </SignedIn>
-
-        <SignedOut>
-          <div className="p-3 rounded-xl border border-transparent hover:border-indigo-500/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 flex items-center gap-3 transition-colors">
-            <div className="w-12 h-12 rounded-full bg-gray-700 text-white flex items-center justify-center text-lg font-semibold">
-              G
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-600">Guest</p>
-              <p className="text-xs text-gray-500 mb-2">
-                Sign in to unlock AI features
-              </p>
-              <SignInButton mode="modal">
-                <button className="px-3 py-1 text-xs font-semibold bg-indigo-600 rounded-md text-white hover:bg-indigo-700 transition-colors">
-                  Sign in
-                </button>
-              </SignInButton>
-            </div>
-          </div>
-        </SignedOut>
+        )}
       </div>
 
       <button
