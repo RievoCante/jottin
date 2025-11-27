@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { Note, Collection } from '../types';
 
-interface UseUIStateReturn {
+export interface UseUIStateReturn {
   // State
   activeNoteId: string | null;
   activeCollectionId: string | null;

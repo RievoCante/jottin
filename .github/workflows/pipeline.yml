@@ -87,7 +87,6 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         script: |
           # Navigate to project directory
-          # Note: Adjust the path if your project is in a different location
           cd ~/jottin || exit 1
           
           # Fetch all branches and reset to match origin/main
@@ -95,5 +94,4 @@ jobs:
           git reset --hard origin/main
           
           # Rebuild and restart containers
-          # Using the prod script defined in package.json
           npm run prod:build

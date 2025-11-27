@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
   Sidebar,
   MainContent,
@@ -19,6 +20,7 @@ import { useHeadsUp } from './hooks/useHeadsUp';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useNoteOperations } from './hooks/useNoteOperations';
 import { getDisplayedNotes } from './utils/notes';
+import { syncManager } from './services/sync/syncManager';
 
 const App: React.FC = () => {
   // Data management
@@ -39,6 +41,14 @@ const App: React.FC = () => {
   useKeyboardShortcuts({
     onSearch: () => uiState.setIsSearchModalOpen(true),
   });
+
+  // Initialize sync when user signs in
+  const { isSignedIn } = useAuth();
+  useEffect(() => {
+    if (isSignedIn) {
+      syncManager.initializeCloudSync();
+    }
+  }, [isSignedIn]);
 
   // Handle note creation with auto-selection
   const handleCreateNote = async (content: string, title?: string) => {
@@ -143,6 +153,7 @@ const App: React.FC = () => {
             onPinNote={appData.togglePinNote}
             onOrganizeNote={noteId => uiState.selectNote(noteId)}
             onDeleteNote={noteOperations.handleDeleteNote}
+            onDeleteNotes={noteOperations.handleDeleteNotes}
             onOpenSearch={() => uiState.setIsSearchModalOpen(true)}
           />
         )}

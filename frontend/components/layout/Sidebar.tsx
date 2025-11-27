@@ -155,9 +155,17 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div className="relative" ref={menuRef}>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setIsProfileMenuOpen(prev => !prev)}
-              className="w-full p-3 rounded-xl border border-transparent hover:border-indigo-500/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 flex items-center gap-3 transition-colors"
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsProfileMenuOpen(prev => !prev);
+                }
+              }}
+              className="w-full p-3 rounded-xl border border-transparent hover:border-indigo-500/40 hover:bg-gray-100 dark:hover:bg-gray-900/60 flex items-center gap-3 transition-colors cursor-pointer"
             >
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold ${
@@ -178,17 +186,25 @@ const Sidebar: React.FC<SidebarProps> = ({
                   <FontAwesomeIcon icon={faUser} />
                 )}
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-left min-w-0">
                 <p className="text-sm font-semibold text-gray-600 dark:text-gray-100 truncate">
                   {user ? user.fullName || 'User' : 'Guest'}
                 </p>
-                <p className="text-xs text-gray-400 truncate">
-                  {user
-                    ? user.primaryEmailAddress?.emailAddress
-                    : 'Sign in to unlock AI'}
-                </p>
+                <div className="text-xs text-gray-400 truncate">
+                  {user ? (
+                    user.primaryEmailAddress?.emailAddress
+                  ) : (
+                    <div onClick={e => e.stopPropagation()}>
+                      <SignInButton mode="modal">
+                        <button className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                          Sign in
+                        </button>
+                      </SignInButton>
+                    </div>
+                  )}
+                </div>
               </div>
-            </button>
+            </div>
 
             {isProfileMenuOpen && (
               <div className="absolute top-full left-0 w-full bg-white dark:bg-[#1E1E1E] rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 mt-2 z-50 text-sm">

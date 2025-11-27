@@ -1,4 +1,5 @@
 export { default as SyncStatus } from './SyncStatus';
+export { default as FloatingActionBar } from './FloatingActionBar';
 export { default as Tooltip } from './Tooltip';
 export { default as RequireAuthNotice } from './RequireAuthNotice';
 export { default as FeatureCard } from './FeatureCard';

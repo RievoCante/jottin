@@ -4,7 +4,7 @@ import { Note, Collection } from '../types';
 import { db } from '../services/database';
 import { syncManager } from '../services/sync/syncManager';
 
-interface UseAppDataReturn {
+export interface UseAppDataReturn {
   // State
   notes: Note[];
   collections: Collection[];

@@ -98,6 +98,14 @@ export class SyncManager {
   async manualCloudSync(): Promise<void> {
     return this.cloudSync.manualCloudSync();
   }
+
+  subscribeToSyncState(listener: (isSyncing: boolean) => void): () => void {
+    return this.cloudSync.subscribe(listener);
+  }
+
+  isCloudSyncing(): boolean {
+    return this.cloudSync.getIsSyncing();
+  }
 }
 
 export const syncManager = new SyncManager();

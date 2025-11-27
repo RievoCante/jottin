@@ -16,6 +16,7 @@ interface UseNoteOperationsReturn {
     updates: Partial<Omit<Note, 'id'>>
   ) => Promise<void>;
   handleDeleteNote: (noteId: string) => Promise<void>;
+  handleDeleteNotes: (noteIds: string[]) => Promise<void>;
   handleGoHome: () => Promise<void>;
   handleCleanUpNote: (note: Note) => Promise<string>;
 }
@@ -67,6 +68,29 @@ export const useNoteOperations = (
     [appData, uiState]
   );
 
+  const handleDeleteNotes = useCallback(
+    async (noteIds: string[]) => {
+      // If active note is being deleted, navigate away
+      if (uiState.activeNote && noteIds.includes(uiState.activeNote.id)) {
+        const nextNoteId = getNextNoteAfterDelete(
+          uiState.activeNote.id,
+          appData.notes.filter(n => !noteIds.includes(n.id)), // Filter out all being deleted
+          uiState.activeCollectionId
+        );
+
+        if (nextNoteId) {
+          uiState.setActiveNoteId(nextNoteId);
+        } else {
+          uiState.goHome();
+        }
+      }
+
+      // Delete all notes
+      await Promise.all(noteIds.map(id => appData.deleteNote(id)));
+    },
+    [appData, uiState]
+  );
+
   const handleGoHome = useCallback(async () => {
     // Check if the current note is empty and delete it
     if (uiState.activeNote && shouldAutoDeleteNote(uiState.activeNote)) {
@@ -89,6 +113,7 @@ export const useNoteOperations = (
   return {
     handleNoteChange,
     handleDeleteNote,
+    handleDeleteNotes,
     handleGoHome,
     handleCleanUpNote,
   };

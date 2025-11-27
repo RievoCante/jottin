@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Note } from '../types';
 import llmService from '../services/llmService';
 
-interface UseHeadsUpReturn {
+export interface UseHeadsUpReturn {
   // State
   relevantNotes: Note[];
   isLoadingHeadsUp: boolean;
