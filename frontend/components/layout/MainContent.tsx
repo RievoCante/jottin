@@ -42,6 +42,7 @@ const MainContent: React.FC<MainContentProps> = ({
   const [cleanedContent, setCleanedContent] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const organizeRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const { isRecording, transcript, startRecording, stopRecording } =
     useLiveTranscription();
@@ -49,6 +50,11 @@ const MainContent: React.FC<MainContentProps> = ({
   useEffect(() => {
     setContent(note.content);
     setTitle(note.title);
+
+    // Auto-focus title if empty (new note)
+    if (!note.title && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
   }, [note.id, note.content, note.title]);
 
   useEffect(() => {
@@ -178,7 +184,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
         <div className="flex-1 flex items-center min-w-0">
           <div className="flex items-center font-semibold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 px-3 py-1.5 rounded-md border border-b-0 border-gray-300 dark:border-gray-600 rounded-b-none relative -bottom-px">
-            <span className="truncate">{note.title}</span>
+            <span className="truncate">{note.title || 'New Note'}</span>
           </div>
         </div>
 
@@ -352,11 +358,12 @@ const MainContent: React.FC<MainContentProps> = ({
 
         <div className="flex-1 flex flex-col pb-8">
           <input
+            ref={titleInputRef}
             type="text"
             value={title}
             onChange={handleTitleChange}
             className="text-3xl font-bold text-gray-900 dark:text-white bg-transparent focus:outline-none w-full mb-4"
-            placeholder="Untitled Note"
+            placeholder="New Note"
           />
 
           {cleanedContent && (

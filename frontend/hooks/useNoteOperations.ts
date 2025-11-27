@@ -1,5 +1,5 @@
 // Complex note operations that combine multiple concerns
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { Note } from '../types';
 import llmService from '../services/llmService';
 import {
@@ -26,21 +26,29 @@ export const useNoteOperations = (
   uiState: UseUIStateReturn,
   headsUp: UseHeadsUpReturn
 ): UseNoteOperationsReturn => {
+  const relevantNotesDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleNoteChange = useCallback(
     async (noteId: string, updates: Partial<Omit<Note, 'id'>>) => {
-      // Update note in app data
+      // Update note in app data immediately
       await appData.updateNote(noteId, updates);
 
-      // If content changed, find relevant notes
+      // If content changed, find relevant notes (debounced)
       if (updates.content !== undefined) {
-        const updatedNote = appData.notes.find(n => n.id === noteId);
-        if (updatedNote) {
-          await headsUp.findRelevantNotes(
-            updates.content,
-            appData.notes,
-            noteId
-          );
+        if (relevantNotesDebounceRef.current) {
+          clearTimeout(relevantNotesDebounceRef.current);
         }
+
+        relevantNotesDebounceRef.current = setTimeout(async () => {
+          const updatedNote = appData.notes.find(n => n.id === noteId);
+          if (updatedNote) {
+            await headsUp.findRelevantNotes(
+              updates.content!,
+              appData.notes,
+              noteId
+            );
+          }
+        }, 2000); // 2 second debounce
       }
     },
     [appData, headsUp]

@@ -7,7 +7,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # Mounts the folder where you copied the PEM files
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - frontend
       - backend
@@ -15,12 +15,11 @@ services:
       - jottin-network
     restart: always
 
-  # 2. Backend (Hidden)
+  # 2. Backend
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    # ports: - "8080:8080"  <-- DELETED (Secure)
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PORT=8080
@@ -30,7 +29,7 @@ services:
     networks:
       - jottin-network
 
-  # 3. Frontend (Hidden)
+  # 3. Frontend
   frontend:
     build:
       context: ./frontend
@@ -38,7 +37,6 @@ services:
       args:
         - VITE_API_URL=https://jottin.online/api
         - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
-    # ports: - "80:80" <-- DELETED (Secure)
     depends_on:
       - backend
     restart: always

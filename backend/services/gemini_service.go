@@ -46,11 +46,14 @@ func (s *GeminiService) Close() {
 func (s *GeminiService) GetChatResponse(prompt string, contextNotes []models.Note) (string, error) {
 	var contextParts []string
 	for _, note := range contextNotes {
-		contextParts = append(contextParts, fmt.Sprintf("Title: %s\nContent: %s", note.Title, note.Content))
+		contextParts = append(contextParts, fmt.Sprintf("ID: %s\nTitle: %s\nContent: %s", note.ID, note.Title, note.Content))
 	}
 	context := strings.Join(contextParts, "\n\n---\n\n")
 
 	fullPrompt := fmt.Sprintf(`Based on the following notes, answer the user's question.
+When referring to a specific note, please cite it using the format: [Note Title](note:NOTE_ID).
+For example, if you are referencing a note with ID "123" and title "My Note", write [My Note](note:123).
+Use Markdown for formatting (bold, lists, etc.).
 
 NOTES:
 %s
@@ -58,7 +61,7 @@ NOTES:
 QUESTION:
 %s`, context, prompt)
 
-	model := s.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := s.client.GenerativeModel("gemini-2.5-flash")
 	resp, err := model.GenerateContent(s.ctx, genai.Text(fullPrompt))
 	if err != nil {
 		log.Printf("Error generating chat response: %v", err)
@@ -119,7 +122,7 @@ Your response must be a JSON object with a single key "relevantNoteIds" which is
 Example response: {"relevantNoteIds": ["note-3", "note-1", "note-5"]}
 `, currentContent, string(summariesJSON))
 
-	model := s.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := s.client.GenerativeModel("gemini-2.5-flash")
 	model.ResponseMIMEType = "application/json"
 
 	resp, err := model.GenerateContent(s.ctx, genai.Text(prompt))
@@ -166,7 +169,7 @@ Original Note:
 ---
 `, content)
 
-	model := s.client.GenerativeModel("gemini-2.0-flash-exp")
+	model := s.client.GenerativeModel("gemini-2.5-flash")
 	resp, err := model.GenerateContent(s.ctx, genai.Text(prompt))
 	if err != nil {
 		log.Printf("Error cleaning up note: %v", err)
