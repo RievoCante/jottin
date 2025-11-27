@@ -9,8 +9,9 @@ import {
   faPlus,
   faClock,
 } from '@fortawesome/free-solid-svg-icons';
-import { SignedIn } from '@clerk/clerk-react';
+import { SignedIn, useAuth } from '@clerk/clerk-react';
 import RequireAuthNotice from '../ui/RequireAuthNotice';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface HeadsUpProps {
   notesContext: Note[];
@@ -38,6 +39,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
   const [aiProvider, setAiProvider] = useState<
     'gemini' | 'openai' | 'ollama' | undefined
   >(undefined);
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     checkAIConfiguration();
@@ -116,8 +118,8 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
       {showHeadsUpContent && (
         <div className="p-4 space-y-4">
           {isLoading && (
-            <div className="p-3 bg-gray-200 dark:bg-gray-800/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
-              Searching for relevant notes...
+            <div className="flex justify-center p-4">
+              <LoadingSpinner />
             </div>
           )}
           {!isLoading && relevantNotes.length > 0 && (
@@ -155,7 +157,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
             <h2 className="font-semibold text-gray-900 dark:text-white">
               AI Chat Bot
             </h2>
-            {isAIConfigured && aiProvider && (
+            {isSignedIn && isAIConfigured && aiProvider && (
               <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                 {aiProvider === 'gemini'

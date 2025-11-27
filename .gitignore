@@ -48,3 +48,4 @@ backend/jottin-backend
 
 # Cursor
 .cursor
+nginx/ssl/
