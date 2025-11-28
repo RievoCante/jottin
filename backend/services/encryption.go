@@ -35,7 +35,7 @@ func NewEncryptionService() (*EncryptionService, error) {
 }
 
 // Encrypt encrypts the plaintext using AES-GCM
-func (s *EncryptionService) Encrypt(plaintext string) ([]byte, []byte, error) {
+func (s *EncryptionService) Encrypt(plaintext string) (ciphertext, nonce []byte, err error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, nil, err
@@ -46,17 +46,17 @@ func (s *EncryptionService) Encrypt(plaintext string) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
-	nonce := make([]byte, gcm.NonceSize())
+	nonce = make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, nil, err
 	}
 
-	ciphertext := gcm.Seal(nil, nonce, []byte(plaintext), nil)
+	ciphertext = gcm.Seal(nil, nonce, []byte(plaintext), nil)
 	return ciphertext, nonce, nil
 }
 
 // Decrypt decrypts the ciphertext using AES-GCM
-func (s *EncryptionService) Decrypt(ciphertext []byte, nonce []byte) (string, error) {
+func (s *EncryptionService) Decrypt(ciphertext, nonce []byte) (string, error) {
 	block, err := aes.NewCipher(s.key)
 	if err != nil {
 		return "", err
