@@ -72,26 +72,65 @@ jobs:
       run: make build
 
   # CD Job
-  cd:
-    name: CD (Deploy to Production)
+  build-push:
+    name: Build & Push Docker Images
     needs: [frontend-ci, backend-ci]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Required to push to GHCR
 
     steps:
-    - name: Deploy to DigitalOcean Droplet
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.DROPLET_IP }}
-        username: ${{ secrets.DROPLET_USERNAME }}
-        key: ${{ secrets.DROPLET_SSH_KEY }}
-        script: |
-          # Navigate to project directory
-          cd ~/jottin || exit 1
-          
-          # Fetch all branches and reset to match origin/main
-          git fetch --all
-          git reset --hard origin/main
-          
-          # Rebuild and restart containers
-          npm run prod:build
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/rievocante/jottin-backend:latest
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ghcr.io/rievocante/jottin-frontend:latest
+          build-args: |
+            VITE_API_URL=https://jottin.online/api
+            VITE_CLERK_PUBLISHABLE_KEY=${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
+
+  # NEW: Deploy (Just Pull & Restart)
+  cd:
+    name: CD (Deploy to Production)
+    needs: build-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd ~/jottin || exit 1
+            
+            # 1. Get the updated docker-compose file
+            git pull origin main
+
+            # 2. Pull the latest images
+            # (This works without login ONLY if packages are Public)
+            docker compose -f docker-compose.prod.yml pull
+
+            # 3. Restart containers
+            docker compose -f docker-compose.prod.yml up -d
