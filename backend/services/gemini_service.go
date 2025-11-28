@@ -42,6 +42,19 @@ func (s *GeminiService) Close() {
 	}
 }
 
+// GenerateEmbedding generates an embedding for the given text
+func (s *GeminiService) GenerateEmbedding(text string) ([]float32, error) {
+	em := s.client.EmbeddingModel("gemini-embedding-001")
+	res, err := em.EmbedContent(s.ctx, genai.Text(text))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate embedding: %v", err)
+	}
+	if res.Embedding == nil {
+		return nil, fmt.Errorf("no embedding generated")
+	}
+	return res.Embedding.Values, nil
+}
+
 // GetChatResponse generates a chat response based on prompt and context notes
 func (s *GeminiService) GetChatResponse(prompt string, contextNotes []models.Note) (string, error) {
 	var contextParts []string

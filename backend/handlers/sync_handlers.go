@@ -6,8 +6,8 @@ import (
 	"backend/services"
 	"context"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -15,12 +15,18 @@ import (
 
 // SyncHandlers handles cloud sync HTTP endpoints
 type SyncHandlers struct {
-	db *services.Database
+	db                *services.Database
+	encryptionService *services.EncryptionService
+	geminiService     *services.GeminiService
 }
 
 // NewSyncHandlers creates a new SyncHandlers instance
-func NewSyncHandlers(db *services.Database) *SyncHandlers {
-	return &SyncHandlers{db: db}
+func NewSyncHandlers(db *services.Database, encryptionService *services.EncryptionService, geminiService *services.GeminiService) *SyncHandlers {
+	return &SyncHandlers{
+		db:                db,
+		encryptionService: encryptionService,
+		geminiService:     geminiService,
+	}
 }
 
 // HandleSyncNotes handles GET /api/sync/notes - fetch notes since last sync
@@ -198,9 +204,16 @@ func (h *SyncHandlers) fetchNotes(ctx context.Context, userID string, since *tim
 			continue
 		}
 
-		// Convert bytes to base64 strings for JSON response
-		note.ContentEncrypted = base64.StdEncoding.EncodeToString(contentEncryptedBytes)
-		note.ContentIV = base64.StdEncoding.EncodeToString(contentIVBytes)
+		// Decrypt content
+		decryptedContent, err := h.encryptionService.Decrypt(contentEncryptedBytes, contentIVBytes)
+		if err != nil {
+			log.Printf("Error decrypting note %s: %v", note.ID, err)
+			// If decryption fails, we might want to return empty content or handle it gracefully
+			// For now, let's return empty string and log error
+			note.Content = ""
+		} else {
+			note.Content = decryptedContent
+		}
 
 		if domain.Valid {
 			note.Domain = &domain.String
@@ -305,21 +318,25 @@ func (h *SyncHandlers) upsertCollection(ctx context.Context, userID string, coll
 }
 
 func (h *SyncHandlers) upsertNote(ctx context.Context, userID string, note *models.SyncNote) error {
-	// ContentEncrypted and ContentIV are base64 strings from frontend
-	// Decode them to []byte for database storage
-	contentEncrypted, err := base64.StdEncoding.DecodeString(note.ContentEncrypted)
+	// Generate embedding
+	// Combine title and content for better context
+	embeddingText := fmt.Sprintf("Title: %s\nContent: %s", note.Title, note.Content)
+	embedding, err := h.geminiService.GenerateEmbedding(embeddingText)
 	if err != nil {
-		return err
+		log.Printf("Error generating embedding for note %s: %v", note.ID, err)
+		// Proceed without embedding (it will be NULL in DB)
 	}
-	contentIV, err := base64.StdEncoding.DecodeString(note.ContentIV)
+
+	// Encrypt content
+	contentEncrypted, contentIV, err := h.encryptionService.Encrypt(note.Content)
 	if err != nil {
 		return err
 	}
 
 	// Upsert note
 	query := `
-		INSERT INTO notes (id, user_id, title, content_encrypted, content_iv, domain, date, is_pinned, created_at, updated_at, deleted_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL)
+		INSERT INTO notes (id, user_id, title, content_encrypted, content_iv, domain, date, is_pinned, created_at, updated_at, deleted_at, embedding)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, $11)
 		ON CONFLICT (id) DO UPDATE SET
 			title = EXCLUDED.title,
 			content_encrypted = EXCLUDED.content_encrypted,
@@ -328,11 +345,12 @@ func (h *SyncHandlers) upsertNote(ctx context.Context, userID string, note *mode
 			date = EXCLUDED.date,
 			is_pinned = EXCLUDED.is_pinned,
 			updated_at = EXCLUDED.updated_at,
-			deleted_at = NULL
+			deleted_at = NULL,
+			embedding = EXCLUDED.embedding
 	`
 	_, err = h.db.DB.ExecContext(ctx, query,
 		note.ID, userID, note.Title, contentEncrypted, contentIV, note.Domain, note.Date, note.IsPinned,
-		note.CreatedAt, note.UpdatedAt,
+		note.CreatedAt, note.UpdatedAt, embedding,
 	)
 	if err != nil {
 		return err

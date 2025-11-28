@@ -52,6 +52,12 @@ func main() {
 		log.Fatalf("Failed to initialize Gemini service: %v", err)
 	}
 
+	// Initialize Encryption service
+	encryptionService, err := services.NewEncryptionService()
+	if err != nil {
+		log.Fatalf("Failed to initialize encryption service: %v", err)
+	}
+
 	// Set up cleanup after all initialization succeeds
 	defer func() {
 		if err := database.Close(); err != nil {
@@ -61,14 +67,14 @@ func main() {
 	}()
 
 	// Initialize handlers
-	aiHandlers := handlers.NewAIHandlers()
-	syncHandlers := handlers.NewSyncHandlers(database)
+	aiHandlers := handlers.NewAIHandlers(database, encryptionService)
+	syncHandlers := handlers.NewSyncHandlers(database, encryptionService, geminiService)
 
 	// Setup routes
 	mux := http.NewServeMux()
 
 	// AI routes
-	mux.HandleFunc("/api/chat", aiHandlers.HandleChat)
+	mux.HandleFunc("/api/chat", handlers.AuthMiddleware(aiHandlers.HandleChat))
 	mux.HandleFunc("/api/notes/relevant", aiHandlers.HandleRelevantNotes)
 	mux.HandleFunc("/api/notes/cleanup", aiHandlers.HandleCleanup)
 	mux.HandleFunc("/api/validate-key", aiHandlers.HandleValidateKey)

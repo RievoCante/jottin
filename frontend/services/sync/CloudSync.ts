@@ -1,7 +1,6 @@
 import { Note, Collection } from '../../types';
 import { db, SyncSettings } from '../database';
 import { apiClient } from '../apiClient';
-import { encryptionService } from '../encryption';
 import { authService } from '../authService';
 
 export class CloudSync {
@@ -156,30 +155,21 @@ export class CloudSync {
       const localNotes = await db.notes.toArray();
       const localCollections = await db.collections.toArray();
 
-      // Encrypt notes before sending
-      const encryptedNotes = await Promise.all(
-        localNotes.map(async note => {
-          const { encrypted, iv } = await encryptionService.encrypt(
-            note.content
-          );
-          return {
-            id: note.id,
-            userId: authService.getUserId()!,
-            title: note.title,
-            contentEncrypted: encrypted,
-            contentIV: iv,
-            domain: note.domain,
-            date: new Date(note.date),
-            isPinned: note.isPinned || false,
-            collectionIds:
-              note.collectionIds ||
-              (note.collectionId ? [note.collectionId] : []),
-            createdAt: new Date(note.date),
-            updatedAt: new Date(note.date),
-            deletedAt: undefined,
-          };
-        })
-      );
+      // Prepare notes for sending (plaintext)
+      const syncNotes = localNotes.map(note => ({
+        id: note.id,
+        userId: authService.getUserId()!,
+        title: note.title,
+        content: note.content,
+        domain: note.domain,
+        date: new Date(note.date),
+        isPinned: note.isPinned || false,
+        collectionIds:
+          note.collectionIds || (note.collectionId ? [note.collectionId] : []),
+        createdAt: new Date(note.date),
+        updatedAt: new Date(note.date),
+        deletedAt: undefined,
+      }));
 
       const syncCollections = localCollections.map(coll => ({
         id: coll.id,
@@ -192,7 +182,7 @@ export class CloudSync {
 
       // Push changes to server
       const pushResponse = await apiClient.post('/api/sync/push', {
-        notes: encryptedNotes,
+        notes: syncNotes,
         collections: syncCollections,
         since: since?.toISOString(),
       });
@@ -238,11 +228,8 @@ export class CloudSync {
           continue;
         }
 
-        // Decrypt content
-        const decryptedContent = await encryptionService.decrypt(
-          remoteNote.contentEncrypted,
-          remoteNote.contentIV
-        );
+        // Content is now plaintext
+        const decryptedContent = remoteNote.content;
 
         // Check if local note is newer
         const localNote = await db.notes.get(remoteNote.id);
@@ -278,8 +265,7 @@ export class CloudSync {
         console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
         console.warn('[Sync] Failed note details:', {
           id: remoteNote.id,
-          contentEncrypted: remoteNote.contentEncrypted,
-          contentIV: remoteNote.contentIV,
+          // contentEncrypted: remoteNote.contentEncrypted,
         });
       }
     }
@@ -314,14 +300,11 @@ export class CloudSync {
     }
 
     try {
-      const { encrypted, iv } = await encryptionService.encrypt(note.content);
-
       const syncNote = {
         id: note.id,
         userId: authService.getUserId()!,
         title: note.title,
-        contentEncrypted: encrypted,
-        contentIV: iv,
+        content: note.content,
         domain: note.domain,
         date: new Date(note.date),
         isPinned: note.isPinned || false,
@@ -356,8 +339,7 @@ export class CloudSync {
         id: noteId,
         userId: authService.getUserId()!,
         title: note?.title || 'Deleted Note', // Fallback
-        contentEncrypted: '',
-        contentIV: '',
+        content: '',
         domain: note?.domain,
         date: new Date(),
         isPinned: false,
