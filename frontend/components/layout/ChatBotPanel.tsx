@@ -11,7 +11,7 @@ import {
   faFileLines,
 } from '@fortawesome/free-solid-svg-icons';
 import RequireAuthNotice from '../ui/RequireAuthNotice';
-import ReactMarkdown from 'react-markdown';
+import Markdown from 'react-markdown';
 
 interface ChatSession {
   id: string;
@@ -332,7 +332,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                       >
                         {msg.sender === 'ai' ? (
                           <div className="markdown-body">
-                            <ReactMarkdown
+                            <Markdown
                               components={{
                                 a: LinkRenderer,
                                 p: ({ children }) => (
@@ -359,7 +359,7 @@ const HeadsUp: React.FC<HeadsUpProps> = ({
                               }}
                             >
                               {msg.text}
-                            </ReactMarkdown>
+                            </Markdown>
                           </div>
                         ) : (
                           msg.text

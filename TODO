@@ -5,7 +5,6 @@ Todo:
   ☐ capacitorjs to make it cross platform
   ☐ chat history
   ✔ search with ctrl/cmd + k @done(25-11-07 12:33)
-  ☐ manage notes in folder/collection structure
   ☐ user can install local llm or put their own api key
   ☐ keep user API key secure and private.
   ☐ sync note to user cloud ex. google drive, dropbox, etc.
@@ -13,3 +12,4 @@ Todo:
   ☐ Important Maintenance Note: Since we copied the certificates, when Let's Encrypt auto-renews them (every 90 days) on your server, your Docker container won't know. You will need to re-run the cp commands in Step 2 and restart the Nginx container every few months. (There are automated ways to fix this later, but this gets you running securely now).
   ☐ for backend, change from standard library (net/http) to Gin
   ☐ k8s so that there will be no down time at all.
+  ☐ encrypt collections as well
