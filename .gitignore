@@ -45,6 +45,8 @@ Thumbs.db
 backend/jottin-backend
 *.exe
 *.exe~
+backend/tmp/
+backend/main
 
 # Cursor
 .cursor
