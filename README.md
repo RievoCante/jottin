@@ -6,18 +6,19 @@ AI-powered note-taking app with smart features powered by Google Gemini.
 
 - 📝 Rich note-taking with markdown support
 - 🎤 Voice transcription
-- 🤖 AI-powered features:
+- 🤖 AI-powered features (RAG):
   - Smart cleanup (formatting & grammar)
-  - Related notes discovery
-  - Chat with your notes
+  - Related notes discovery (Vector Search)
+  - Chat with your notes (Context-aware)
 - 📁 Collections to organize notes
 - 🎨 Beautiful, modern UI
+- 🔒 Secure Cloud Sync (Server-Side Encryption)
 
 ## Tech Stack
 
 **Frontend:** React 19, TypeScript, Tailwind CSS, Vite  
-**Backend:** Go 1.23, Google Gemini AI  
-**Database:** PostgreSQL (Phase 2)  
+**Backend:** Go 1.23, Google Gemini AI (Embeddings + Chat)  
+**Database:** PostgreSQL (NeonDB) with `pgvector`  
 **Deployment:** Docker, Docker Compose
 
 ## Setup

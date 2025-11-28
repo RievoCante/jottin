@@ -5,18 +5,17 @@ import "time"
 
 // SyncNote represents a note in sync operations
 type SyncNote struct {
-	ID               string     `json:"id"`
-	UserID           string     `json:"userId"`
-	Title            string     `json:"title"`
-	ContentEncrypted string     `json:"contentEncrypted"` // Base64 encoded encrypted content (as string)
-	ContentIV        string     `json:"contentIV"`        // Base64 encoded IV (as string)
-	Domain           *string    `json:"domain,omitempty"`
-	Date             time.Time  `json:"date"`
-	IsPinned         bool       `json:"isPinned"`
-	CollectionIDs    []string   `json:"collectionIds,omitempty"`
-	CreatedAt        time.Time  `json:"createdAt"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
-	DeletedAt        *time.Time `json:"deletedAt,omitempty"`
+	ID            string     `json:"id"`
+	UserID        string     `json:"userId"`
+	Title         string     `json:"title"`
+	Content       string     `json:"content"` // Plaintext content
+	Domain        *string    `json:"domain,omitempty"`
+	Date          time.Time  `json:"date"`
+	IsPinned      bool       `json:"isPinned"`
+	CollectionIDs []string   `json:"collectionIds,omitempty"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+	DeletedAt     *time.Time `json:"deletedAt,omitempty"`
 }
 
 // SyncCollection represents a collection in sync operations

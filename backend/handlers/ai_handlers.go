@@ -4,18 +4,26 @@ package handlers
 import (
 	"backend/models"
 	"backend/services"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // AIHandlers handles AI-powered HTTP endpoints
-type AIHandlers struct{}
+type AIHandlers struct {
+	db                *services.Database
+	encryptionService *services.EncryptionService
+}
 
 // NewAIHandlers creates a new AIHandlers instance
-func NewAIHandlers() *AIHandlers {
-	return &AIHandlers{}
+func NewAIHandlers(db *services.Database, encryptionService *services.EncryptionService) *AIHandlers {
+	return &AIHandlers{
+		db:                db,
+		encryptionService: encryptionService,
+	}
 }
 
 // HandleChat handles POST /api/chat - chat with AI
@@ -29,6 +37,12 @@ func (h *AIHandlers) HandleChat(w http.ResponseWriter, r *http.Request) {
 	userApiKey := r.Header.Get("X-API-Key")
 	if userApiKey == "" {
 		respondWithError(w, "API key required", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := GetUserID(r)
+	if err != nil {
+		respondWithError(w, "Unauthorized: Sign in required for context-aware chat", http.StatusUnauthorized)
 		return
 	}
 
@@ -56,7 +70,24 @@ func (h *AIHandlers) HandleChat(w http.ResponseWriter, r *http.Request) {
 		}
 		defer geminiService.Close()
 
-		response, err = geminiService.GetChatResponse(req.Prompt, req.ContextNotes)
+		// Generate embedding for the prompt
+		embedding, err := geminiService.GenerateEmbedding(req.Prompt)
+		if err != nil {
+			log.Printf("Error generating embedding: %v", err)
+			respondWithError(w, "Failed to process prompt", http.StatusInternalServerError)
+			return
+		}
+
+		// Find and decrypt similar notes
+		contextNotes, err := h.findAndDecryptNotes(r.Context(), embedding, userID)
+		if err != nil {
+			log.Printf("Error finding similar notes: %v", err)
+			respondWithError(w, "Failed to fetch context", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate chat response with RAG context
+		response, err = geminiService.GetChatResponse(req.Prompt, contextNotes)
 		if err != nil {
 			log.Printf("Error getting chat response: %v", err)
 
@@ -76,6 +107,33 @@ func (h *AIHandlers) HandleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, map[string]string{"response": response}, http.StatusOK)
+}
+
+// findAndDecryptNotes finds relevant notes using vector search and decrypts their content
+func (h *AIHandlers) findAndDecryptNotes(ctx context.Context, embedding []float32, userID string) ([]models.Note, error) {
+	similarDBNotes, err := h.db.FindSimilarNotes(ctx, embedding, 5, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var contextNotes []models.Note
+	for i := range similarDBNotes {
+		dbNote := &similarDBNotes[i]
+		decryptedContent, err := h.encryptionService.Decrypt(dbNote.ContentEncrypted, dbNote.ContentIV)
+		if err != nil {
+			log.Printf("Error decrypting note %s: %v", dbNote.ID, err)
+			continue
+		}
+
+		note := models.Note{
+			ID:      dbNote.ID,
+			Title:   dbNote.Title,
+			Content: decryptedContent,
+			Date:    dbNote.Date.Format(time.RFC3339),
+		}
+		contextNotes = append(contextNotes, note)
+	}
+	return contextNotes, nil
 }
 
 // HandleRelevantNotes handles POST /api/notes/relevant - find relevant notes

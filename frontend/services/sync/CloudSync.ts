@@ -1,7 +1,6 @@
 import { Note, Collection } from '../../types';
 import { db, SyncSettings } from '../database';
 import { apiClient } from '../apiClient';
-import { encryptionService } from '../encryption';
 import { authService } from '../authService';
 
 export class CloudSync {
@@ -9,6 +8,22 @@ export class CloudSync {
   private readonly CLOUD_SYNC_INTERVAL = 30000; // 30 seconds
   private isCloudSyncing: boolean = false;
   private lastCloudSyncTime: string | null = null;
+  private listeners: ((isSyncing: boolean) => void)[] = [];
+
+  subscribe(listener: (isSyncing: boolean) => void): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(listener => listener(this.isCloudSyncing));
+  }
+
+  getIsSyncing(): boolean {
+    return this.isCloudSyncing;
+  }
 
   async getSyncStatus(): Promise<SyncSettings | null> {
     try {
@@ -19,16 +34,13 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Initialize cloud sync if already enabled (called on app load)
-   */
+  // Initialize cloud sync if already enabled (called on app load)
   async initializeCloudSync(): Promise<void> {
     const settings = await this.getSyncStatus();
     if (settings?.cloudSyncEnabled && authService.isAuthenticated()) {
       this.startCloudSync();
 
-      // Perform immediate sync if it's been a while or never synced
-      // This ensures fresh data on startup
+      // Perform immediate sync if it's been a while or never synced to ensure fresh data
       const lastSync = settings.lastCloudSyncTime
         ? new Date(settings.lastCloudSyncTime)
         : null;
@@ -43,9 +55,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Enable cloud sync (Jottin Cloud)
-   */
+  // Enable cloud sync (Jottin Cloud)
   async enableCloudSync(): Promise<void> {
     if (!authService.isAuthenticated()) {
       throw new Error('User must be authenticated to enable cloud sync');
@@ -63,9 +73,7 @@ export class CloudSync {
     await this.performCloudSync();
   }
 
-  /**
-   * Disable cloud sync
-   */
+  // Disable cloud sync
   async disableCloudSync(): Promise<void> {
     this.stopCloudSync();
 
@@ -74,9 +82,7 @@ export class CloudSync {
     });
   }
 
-  /**
-   * Start periodic cloud sync
-   */
+  // Start periodic cloud sync
   private startCloudSync(): void {
     if (this.cloudSyncInterval !== null) {
       return; // Already running
@@ -89,9 +95,7 @@ export class CloudSync {
     }, this.CLOUD_SYNC_INTERVAL);
   }
 
-  /**
-   * Stop periodic cloud sync
-   */
+  // Stop periodic cloud sync
   private stopCloudSync(): void {
     if (this.cloudSyncInterval !== null) {
       clearInterval(this.cloudSyncInterval);
@@ -99,9 +103,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Perform cloud sync: push local changes and pull remote changes
-   */
+  // Perform cloud sync: push local changes and pull remote changes
   async performCloudSync(): Promise<void> {
     if (this.isCloudSyncing) {
       return; // Already syncing
@@ -117,6 +119,7 @@ export class CloudSync {
     }
 
     this.isCloudSyncing = true;
+    this.notifyListeners();
 
     try {
       // Get last sync time
@@ -152,30 +155,21 @@ export class CloudSync {
       const localNotes = await db.notes.toArray();
       const localCollections = await db.collections.toArray();
 
-      // Encrypt notes before sending
-      const encryptedNotes = await Promise.all(
-        localNotes.map(async note => {
-          const { encrypted, iv } = await encryptionService.encrypt(
-            note.content
-          );
-          return {
-            id: note.id,
-            userId: authService.getUserId()!,
-            title: note.title,
-            contentEncrypted: encrypted,
-            contentIV: iv,
-            domain: note.domain,
-            date: new Date(note.date),
-            isPinned: note.isPinned || false,
-            collectionIds:
-              note.collectionIds ||
-              (note.collectionId ? [note.collectionId] : []),
-            createdAt: new Date(note.date),
-            updatedAt: new Date(note.date),
-            deletedAt: undefined,
-          };
-        })
-      );
+      // Prepare notes for sending (plaintext)
+      const syncNotes = localNotes.map(note => ({
+        id: note.id,
+        userId: authService.getUserId()!,
+        title: note.title,
+        content: note.content,
+        domain: note.domain,
+        date: new Date(note.date),
+        isPinned: note.isPinned || false,
+        collectionIds:
+          note.collectionIds || (note.collectionId ? [note.collectionId] : []),
+        createdAt: new Date(note.date),
+        updatedAt: new Date(note.date),
+        deletedAt: undefined,
+      }));
 
       const syncCollections = localCollections.map(coll => ({
         id: coll.id,
@@ -188,7 +182,7 @@ export class CloudSync {
 
       // Push changes to server
       const pushResponse = await apiClient.post('/api/sync/push', {
-        notes: encryptedNotes,
+        notes: syncNotes,
         collections: syncCollections,
         since: since?.toISOString(),
       });
@@ -217,6 +211,7 @@ export class CloudSync {
       throw error;
     } finally {
       this.isCloudSyncing = false;
+      this.notifyListeners();
     }
   }
 
@@ -233,11 +228,8 @@ export class CloudSync {
           continue;
         }
 
-        // Decrypt content
-        const decryptedContent = await encryptionService.decrypt(
-          remoteNote.contentEncrypted,
-          remoteNote.contentIV
-        );
+        // Content is now plaintext
+        const decryptedContent = remoteNote.content;
 
         // Check if local note is newer
         const localNote = await db.notes.get(remoteNote.id);
@@ -273,8 +265,7 @@ export class CloudSync {
         console.error(`Failed to merge remote note ${remoteNote.id}:`, error);
         console.warn('[Sync] Failed note details:', {
           id: remoteNote.id,
-          contentEncrypted: remoteNote.contentEncrypted,
-          contentIV: remoteNote.contentIV,
+          // contentEncrypted: remoteNote.contentEncrypted,
         });
       }
     }
@@ -301,9 +292,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Sync a single note to cloud (called when note is updated)
-   */
+  // Sync a single note to cloud (called when note is updated)
   async syncNoteToCloud(note: Note): Promise<void> {
     const settings = await this.getSyncStatus();
     if (!settings?.cloudSyncEnabled || !authService.isAuthenticated()) {
@@ -311,14 +300,11 @@ export class CloudSync {
     }
 
     try {
-      const { encrypted, iv } = await encryptionService.encrypt(note.content);
-
       const syncNote = {
         id: note.id,
         userId: authService.getUserId()!,
         title: note.title,
-        contentEncrypted: encrypted,
-        contentIV: iv,
+        content: note.content,
         domain: note.domain,
         date: new Date(note.date),
         isPinned: note.isPinned || false,
@@ -338,9 +324,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Sync note deletion to cloud
-   */
+  // Sync note deletion to cloud
   async syncDeleteToCloud(noteId: string): Promise<void> {
     const settings = await this.getSyncStatus();
     if (!settings?.cloudSyncEnabled || !authService.isAuthenticated()) {
@@ -349,20 +333,13 @@ export class CloudSync {
 
     try {
       const note = await db.notes.get(noteId);
-      // Note might be already deleted from DB, so we construct a minimal sync object
-      // or rely on what we have. If we don't have the note, we can't sync the deletion
-      // properly unless we track deleted IDs separately.
-      // For now, if note is missing, we can try to sync just the ID if the backend supports it,
-      // but the current backend expects a full struct.
-      // If the note is already gone from IndexedDB, we can't get its title/etc.
-      // However, for deletion, the backend mainly needs ID and DeletedAt.
+      // Construct minimal sync object for deletion (backend only needs ID and DeletedAt)
 
       const syncNote = {
         id: noteId,
         userId: authService.getUserId()!,
         title: note?.title || 'Deleted Note', // Fallback
-        contentEncrypted: '',
-        contentIV: '',
+        content: '',
         domain: note?.domain,
         date: new Date(),
         isPinned: false,
@@ -381,9 +358,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Sync a single collection to cloud (called when collection is created/updated)
-   */
+  // Sync a single collection to cloud (called when collection is created/updated)
   async syncCollectionToCloud(collection: Collection): Promise<void> {
     const settings = await this.getSyncStatus();
     if (!settings?.cloudSyncEnabled || !authService.isAuthenticated()) {
@@ -412,9 +387,7 @@ export class CloudSync {
     }
   }
 
-  /**
-   * Manual sync trigger (for "Sync Now" button)
-   */
+  // Manual sync trigger (for "Sync Now" button)
   async manualCloudSync(): Promise<void> {
     await this.performCloudSync();
   }

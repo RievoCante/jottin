@@ -4,7 +4,7 @@ import { Note, Collection } from '../types';
 import { db } from '../services/database';
 import { syncManager } from '../services/sync/syncManager';
 
-interface UseAppDataReturn {
+export interface UseAppDataReturn {
   // State
   notes: Note[];
   collections: Collection[];
@@ -87,7 +87,7 @@ export const useAppData = (): UseAppDataReturn => {
     async (content: string, title?: string, collectionId?: string | null) => {
       const newNote: Note = {
         id: `note-${Date.now()}`,
-        title: title || content.split('\n')[0].substring(0, 50) || 'New Note',
+        title: title || content.split('\n')[0].substring(0, 50) || '',
         content: content,
         date: new Date().toISOString(),
         collectionId: collectionId || undefined,
@@ -99,10 +99,10 @@ export const useAppData = (): UseAppDataReturn => {
 
         // Sync to file if sync is enabled
         if (isSyncEnabled) {
-          await syncManager.syncNoteToFile(newNote);
+          syncManager.syncNoteToFile(newNote).catch(console.error);
         }
         // Sync to cloud if cloud sync is enabled
-        await syncManager.syncNoteToCloud(newNote);
+        syncManager.syncNoteToCloud(newNote).catch(console.error);
 
         return newNote.id;
       } catch (error) {

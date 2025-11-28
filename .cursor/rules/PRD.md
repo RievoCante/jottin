@@ -35,6 +35,7 @@ Jottin is an AI-powered note-taking application that helps users create, organiz
 ┌──────────────┐          ┌──────────────┐          ┌──────────────┐
 │  Mobile/PC   │ ◄──────► │   Backend    │ ◄──────► │  PostgreSQL  │
 │  (Frontend)  │   HTTPS  │    (Go)      │          │   (NeonDB)   │
+│              │          │  (Encryption)│          │   (Vector)   │
 └──────────────┘          └──────┬───────┘          └──────────────┘
        ▲                         │
        │ (Local DB)              ▼
@@ -56,17 +57,16 @@ Jottin is an AI-powered note-taking application that helps users create, organiz
 
 ### 2. Cloud Sync & Security
 
-- **End-to-End Encryption**: Notes are encrypted on the device before sending to the cloud
+- **Server-Side Encryption**: Notes are encrypted on the server (AES-GCM) before storage.
 - **Cloud Sync**: Seamless synchronization across devices (PC, Mobile, Tablet)
-- **Deterministic Key Generation**: Encryption keys derived from User ID for consistent access
 - **Authentication**: Secure login via Clerk (Google, Email)
 
-### 3. AI Features
+### 3. AI Features (RAG)
 
 - **Smart Cleanup**: AI-powered note formatting and grammar correction
 - **Related Notes**: Automatic discovery of relevant notes based on content
-- **AI Chat**: Ask questions about your notes ("Chat with your notes")
-- **Context Awareness**: AI understands note relationships
+- **AI Chat**: Ask questions about your notes ("Chat with your notes") using RAG (Retrieval-Augmented Generation)
+- **Vector Search**: Efficient retrieval of relevant notes using `pgvector` and Gemini embeddings
 
 ### 4. Collections
 
@@ -79,14 +79,14 @@ Jottin is an AI-powered note-taking application that helps users create, organiz
 ### Sync & Storage
 
 ```
-GET    /api/sync/notes     # Fetch updated notes
-POST   /api/sync/push      # Push local changes (Encrypted)
+GET    /api/sync/notes     # Fetch updated notes (Decrypted)
+POST   /api/sync/push      # Push local changes (Plaintext -> Encrypted)
 ```
 
 ### AI Features
 
 ```
-POST   /api/chat           # Chat with notes
+POST   /api/chat           # Chat with notes (RAG)
 POST   /api/notes/relevant # Find related notes
 POST   /api/notes/cleanup  # Format/Clean note
 ```
@@ -100,6 +100,7 @@ GEMINI_API_KEY=your_gemini_key
 CLERK_SECRET_KEY=your_clerk_secret
 DATABASE_URL=postgresql://user:pass@host/db
 PORT=8080
+DATA_ENCRYPTION_KEY=32_byte_hex_key
 ```
 
 ### Frontend
@@ -128,8 +129,9 @@ notes (
   id VARCHAR(255) PRIMARY KEY,
   user_id VARCHAR(255) REFERENCES users(id),
   title TEXT,
-  content_encrypted TEXT, -- Base64 Encrypted Content
-  content_iv TEXT,        -- Base64 IV
+  content_encrypted BYTEA, -- AES-GCM Encrypted Content
+  content_iv BYTEA,        -- AES-GCM IV
+  embedding VECTOR(768),   -- Gemini Embedding
   domain VARCHAR(255),
   date TIMESTAMP,
   is_pinned BOOLEAN,
@@ -150,15 +152,14 @@ note_collections (
 
 ## Security Considerations
 
-- **Zero-Knowledge Architecture**: Backend never sees plaintext note content.
-- **Client-Side Encryption**: AES-GCM 256-bit encryption using Web Crypto API.
-- **Secure Key Derivation**: PBKDF2 with SHA-256 and high iteration count.
+- **Server-Side Encryption**: Data is encrypted at rest in the database using AES-GCM.
 - **Authentication**: All API endpoints protected via Clerk JWT.
-- **HTTPS Enforcement**: Required for Web Crypto API.
+- **HTTPS Enforcement**: Required for secure data transmission.
 
 ## Future Enhancements
 
 - Real-time collaboration (Shared notes)
 - Mobile App (React Native / PWA install)
 - Export notes (PDF, Markdown)
-- Full-text search on encrypted data (Client-side search)
+- Full-text search
+

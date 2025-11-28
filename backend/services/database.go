@@ -2,11 +2,13 @@
 package services
 
 import (
+	"backend/models"
 	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -65,4 +67,63 @@ func (d *Database) EnsureUser(ctx context.Context, userID, email string) error {
 	`
 	_, err := d.DB.ExecContext(ctx, query, userID, email)
 	return err
+}
+
+// FindSimilarNotes finds notes similar to the given embedding
+func (d *Database) FindSimilarNotes(ctx context.Context, embedding []float32, limit int, userID string) ([]models.DBNote, error) {
+	// Format embedding as string "[x,y,z]" for pgvector
+	var embeddingStrs []string
+	for _, v := range embedding {
+		embeddingStrs = append(embeddingStrs, fmt.Sprintf("%f", v))
+	}
+	embeddingStr := "[" + strings.Join(embeddingStrs, ",") + "]"
+
+	query := `
+		SELECT id, user_id, title, content_encrypted, content_iv, domain, date, is_pinned, created_at, updated_at, deleted_at
+		FROM notes
+		WHERE user_id = $1 AND deleted_at IS NULL
+		ORDER BY embedding <=> $2
+		LIMIT $3
+	`
+	rows, err := d.DB.QueryContext(ctx, query, userID, embeddingStr, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
+
+	var notes []models.DBNote
+	for rows.Next() {
+		var note models.DBNote
+		var domain sql.NullString
+		var deletedAt sql.NullTime
+		var contentEncryptedBytes []byte
+		var contentIVBytes []byte
+
+		err := rows.Scan(
+			&note.ID, &note.UserID, &note.Title, &contentEncryptedBytes, &contentIVBytes,
+			&domain, &note.Date, &note.IsPinned, &note.CreatedAt, &note.UpdatedAt, &deletedAt,
+		)
+		if err != nil {
+			log.Printf("Error scanning note: %v", err)
+			continue
+		}
+
+		note.ContentEncrypted = contentEncryptedBytes
+		note.ContentIV = contentIVBytes
+
+		if domain.Valid {
+			note.Domain = &domain.String
+		}
+		if deletedAt.Valid {
+			note.DeletedAt = &deletedAt.Time
+		}
+
+		notes = append(notes, note)
+	}
+
+	return notes, nil
 }

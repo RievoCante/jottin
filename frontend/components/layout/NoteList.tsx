@@ -7,8 +7,14 @@ import {
   faEllipsis,
   faWandMagicSparkles,
   faMagnifyingGlass,
+  faCloud,
+  faCheck,
+  faSync,
 } from '@fortawesome/free-solid-svg-icons';
 import Tooltip from '../ui/Tooltip';
+import { useFileSync } from '../../hooks/useFileSync';
+import { useNoteSelection } from '../../hooks/useNoteSelection';
+import FloatingActionBar from '../ui/FloatingActionBar';
 
 interface GroupedNotes {
   label: string;
@@ -68,6 +74,7 @@ interface NoteListProps {
   onPinNote?: (noteId: string) => void;
   onOrganizeNote?: (noteId: string) => void;
   onDeleteNote?: (noteId: string) => void;
+  onDeleteNotes?: (noteIds: string[]) => void;
   onOpenSearch?: () => void;
 }
 
@@ -80,11 +87,17 @@ const NoteList: React.FC<NoteListProps> = ({
   onPinNote,
   onOrganizeNote,
   onDeleteNote,
+  onDeleteNotes,
   onOpenSearch,
 }) => {
   const groupedNotes = groupNotesByDate(notes);
   const collectionsMap = new Map(collections.map(c => [c.id, c]));
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const { isSyncEnabled, isSyncing } = useFileSync();
+
+  // Selection hook
+  const { selectedNoteIds, toggleNoteSelection, clearSelection } =
+    useNoteSelection();
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
@@ -181,18 +194,45 @@ const NoteList: React.FC<NoteListProps> = ({
   );
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-y-auto">
+    <div className="flex-1 flex flex-col bg-white dark:bg-[#1E1E1E] overflow-y-auto relative">
       <div className="sticky top-0 bg-white/80 dark:bg-[#1E1E1E]/80 backdrop-blur-sm z-10 border-b border-gray-200 dark:border-gray-700 px-8 py-3 flex justify-between items-center">
         {headerContent}
       </div>
-      <div className="px-8 py-4">
+      <div className="px-8 py-4 pb-24">
         {groupedNotes.map(
           group =>
             group.notes.length > 0 && (
               <div key={group.label} className="mb-6">
-                <h2 className="text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-wider mb-2">
-                  {group.label}
-                </h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-xs font-bold text-gray-500 dark:text-gray-500 uppercase tracking-wider">
+                    {group.label}
+                  </h2>
+                  {group.label === 'TODAY' && isSyncEnabled && (
+                    <div className="ml-auto mr-2">
+                      {isSyncing ? (
+                        <Tooltip text="Syncing...">
+                          <FontAwesomeIcon
+                            icon={faSync}
+                            className="w-3 h-3 text-gray-400 animate-spin"
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Tooltip text="All changes saved">
+                          <div className="relative">
+                            <FontAwesomeIcon
+                              icon={faCloud}
+                              className="w-4 h-4 text-gray-300 dark:text-gray-600"
+                            />
+                            <FontAwesomeIcon
+                              icon={faCheck}
+                              className="w-2 h-2 text-green-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                            />
+                          </div>
+                        </Tooltip>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-1">
                   {group.notes.map(note => {
                     const noteCollectionIds =
@@ -201,11 +241,16 @@ const NoteList: React.FC<NoteListProps> = ({
                     const noteCollections = noteCollectionIds
                       .map(id => collectionsMap.get(id))
                       .filter(Boolean);
+
+                    const isSelected = selectedNoteIds.includes(note.id);
+
                     return (
                       <div
                         key={note.id}
                         onClick={() => onNoteSelect(note.id)}
-                        className="group w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer"
+                        className={`group w-full flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer relative ${
+                          isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
+                        }`}
                         role="button"
                         tabIndex={0}
                         onKeyDown={e => {
@@ -215,7 +260,35 @@ const NoteList: React.FC<NoteListProps> = ({
                           }
                         }}
                       >
-                        <div className="flex items-center gap-3 text-left min-w-0">
+                        {/* Checkbox Container */}
+                        <div
+                          className={`flex items-center justify-center w-8 h-8 mr-2 cursor-pointer transition-opacity duration-200 shrink-0 ${
+                            isSelected
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover:opacity-100'
+                          }`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            toggleNoteSelection(note.id, e.shiftKey, notes);
+                          }}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? 'bg-indigo-600 border-indigo-600'
+                                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-[#2A2A2A] hover:border-indigo-500'
+                            }`}
+                          >
+                            {isSelected && (
+                              <FontAwesomeIcon
+                                icon={faCheck}
+                                className="text-white w-2.5 h-2.5"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-left min-w-0 flex-1">
                           <FontAwesomeIcon
                             icon={faFileLines}
                             className="w-5 h-5 text-gray-400 dark:text-gray-500 shrink-0"
@@ -259,7 +332,7 @@ const NoteList: React.FC<NoteListProps> = ({
                             />
                           </button>
                           {activeMenuId === note.id && (
-                            <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2">
+                            <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#2A2A2A] rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
                               <button
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/70 flex items-center gap-2"
                                 onClick={() => {
@@ -298,6 +371,21 @@ const NoteList: React.FC<NoteListProps> = ({
             )
         )}
       </div>
+
+      <FloatingActionBar
+        selectedCount={selectedNoteIds.length}
+        onClearSelection={clearSelection}
+        onDelete={() => {
+          if (onDeleteNotes) {
+            onDeleteNotes(selectedNoteIds);
+            clearSelection();
+          }
+        }}
+        onOrganize={() => {
+          // Placeholder for organize
+          clearSelection();
+        }}
+      />
     </div>
   );
 };

@@ -14,6 +14,7 @@ import { db } from '../../services/database';
 import { SignedIn } from '@clerk/clerk-react';
 import RequireAuthNotice from '../ui/RequireAuthNotice';
 import llmService from '../../services/llmService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ const Settings: React.FC<SettingsProps> = ({
   collections,
   onSyncStatusChange,
 }) => {
+  const { addToast } = useToast();
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncFolderName, setSyncFolderName] = useState<string>('');
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
@@ -75,6 +77,9 @@ const Settings: React.FC<SettingsProps> = ({
     if (settings) {
       setAiProvider(settings.aiProvider);
       setApiKey(settings.aiApiKey || '');
+      if (settings.aiApiKey) {
+        setValidationStatus('success');
+      }
     }
   };
 
@@ -268,13 +273,13 @@ const Settings: React.FC<SettingsProps> = ({
       });
 
       if (validationStatus === 'success') {
-        alert('API key validated and saved successfully!');
+        addToast('API key validated and saved successfully!', 'success');
       } else {
-        alert('AI settings saved successfully!');
+        addToast('AI settings saved successfully!', 'success');
       }
     } catch (error) {
       console.error('Failed to save AI settings:', error);
-      alert('Failed to save AI settings. Please try again.');
+      addToast('Failed to save AI settings. Please try again.', 'error');
     }
   };
 
