@@ -17,7 +17,13 @@ services:
 
   # 2. Backend
   backend:
+<<<<<<< HEAD
     image: ghcr.io/rievocante/jottin-backend:latest
+=======
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+>>>>>>> b587ee63a506d9f733c6c45a1917c5ce2e270891
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - PORT=8080
@@ -29,7 +35,16 @@ services:
 
   # 3. Frontend
   frontend:
+<<<<<<< HEAD
     image: ghcr.io/rievocante/jottin-frontend:latest
+=======
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=https://jottin.online/api
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+>>>>>>> b587ee63a506d9f733c6c45a1917c5ce2e270891
     depends_on:
       - backend
     restart: always
