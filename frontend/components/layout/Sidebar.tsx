@@ -190,19 +190,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <p className="text-sm font-semibold text-gray-600 dark:text-gray-100 truncate">
                   {user ? user.fullName || 'User' : 'Guest'}
                 </p>
-                <div className="text-xs text-gray-400 truncate">
-                  {user ? (
-                    user.primaryEmailAddress?.emailAddress
-                  ) : (
-                    <div onClick={e => e.stopPropagation()}>
-                      <SignInButton mode="modal">
-                        <button className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
-                          Sign in
-                        </button>
-                      </SignInButton>
-                    </div>
-                  )}
-                </div>
+                <p className="text-xs text-gray-400 truncate">
+                  {user?.primaryEmailAddress?.emailAddress}
+                </p>
               </div>
             </div>
 
