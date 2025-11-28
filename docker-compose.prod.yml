@@ -31,6 +31,9 @@ services:
   # 3. Frontend
   frontend:
     image: ghcr.io/rievocante/jottin-frontend:latest
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
     depends_on:
       - backend
     restart: always

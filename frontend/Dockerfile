@@ -7,6 +7,10 @@ WORKDIR /app
 ARG VITE_API_URL=http://localhost:8080
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Accept build argument for Clerk Key
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+
 # Copy package files
 COPY package*.json ./
 RUN npm ci
